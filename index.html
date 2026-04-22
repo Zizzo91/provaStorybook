@@ -307,7 +307,8 @@ document.getElementById('btn-github-load').addEventListener('click', async ()=>{
   }
   const btn = document.getElementById('btn-github-load');
   btn.disabled = true;
-  const storyName = document.getElementById('inp-story-name').value.trim() || S.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  const storyName = document.getElementById('inp-story-select').value || S.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  if(!storyName) return setStatus('status-story','Seleziona una storia dalla tendina.','err');
   const path = `stories/${storyName}.json`;
   setStatus('status-story','Caricamento...','warn');
   try {
@@ -349,6 +350,8 @@ document.getElementById('btn-list-stories').addEventListener('click', async ()=>
     const res = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/stories`, {
       headers: { 'Authorization': `token ${S.ghToken}`, 'Accept': 'application/vnd.github.v3+json' }
     });
+    console.log('List response:', res.status, S.ghToken?.slice(0,10));
+    if(res.status === 401 || res.status === 403) throw new Error('Token non valido o senza permessi. Verifica il token GitHub.');
     if(!res.ok) throw new Error(res.status === 404 ? 'Nessuna storia salvata' : 'Errore: ' + res.status);
     const files = await res.json();
     const select = document.getElementById('inp-story-select');
@@ -476,6 +479,9 @@ loadConfig();
   if(savedGhRepo && !document.getElementById('inp-gh-repo').value) {
     document.getElementById('inp-gh-repo').value = savedGhRepo;
   }
+  if(S.ghToken && S.ghOwner && S.ghRepo) {
+    setTimeout(() => document.getElementById('btn-list-stories')?.click(), 500);
+  }
   const saved = localStorage.getItem('storybook_settings');
   if(saved){
    const d = JSON.parse(saved);
@@ -484,8 +490,21 @@ loadConfig();
   readInputs();
 });
 document.getElementById('btn-save-keys').addEventListener('click', () => {
-  readInputs();
-  setStatus('status-settings', 'Chiavi salvate nel browser! ✓', 'ok');
+  const apiKey = document.getElementById('inp-apikey').value.trim();
+  const ghToken = document.getElementById('inp-gh-token').value.trim();
+  const ghOwner = document.getElementById('inp-gh-owner').value.trim();
+  const ghRepo = document.getElementById('inp-gh-repo').value.trim();
+  console.log('Saving keys:', { apiKey: apiKey?.slice(0,10), ghOwner, ghRepo });
+  if(!apiKey && !ghToken) {
+    setStatus('status-settings', 'Inserisci almeno una chiave prima.','err');
+    return;
+  }
+  if(apiKey) localStorage.setItem('storybook_apikey', apiKey);
+  if(ghToken) localStorage.setItem('storybook_gh_token', ghToken);
+  if(ghOwner) localStorage.setItem('storybook_gh_owner', ghOwner);
+  if(ghRepo) localStorage.setItem('storybook_gh_repo', ghRepo);
+  console.log('Saved to localStorage:', localStorage.getItem('storybook_apikey')?.slice(0,10));
+  setStatus('status-settings', 'Chiavi salvate! ✓', 'ok');
 });
 document.getElementById('inp-textmodel').addEventListener('change', () => {
   localStorage.setItem('storybook_settings', JSON.stringify({
