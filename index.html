@@ -317,31 +317,43 @@ document.getElementById('btn-github-save').addEventListener('click', async ()=>{
  }
 });
 window.addEventListener('load', async ()=>{
- try {
-  const cloudRes = await fetch('.settings/config.json');
-if (cloudRes.ok) {
-    const d = await cloudRes.json();
-    if (d.groq) document.getElementById('inp-apikey').value = d.groq;
-    if (d.googleApiKey) {
-      if(!document.getElementById('inp-google-apikey')) {
-        const inp = document.createElement('input');
-        inp.id = 'inp-google-apikey';
-        inp.type = 'hidden';
-        document.body.appendChild(inp);
-      }
-      document.getElementById('inp-google-apikey').value = d.googleApiKey;
+  const loadConfig = async () => {
+    const repoOwner = 'Zizzo91';
+    const repoName = 'Storybook';
+    const paths = [
+      `settings/config.json`,
+      `config.json`,
+      `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/settings/config.json`,
+      `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/config.json`
+    ];
+    let d = null;
+    for(const p of paths) {
+      try {
+        const res = await fetch(p);
+        if(res.ok) { d = await res.json(); break; }
+      } catch{}
     }
-    if (d.githubToken) document.getElementById('inp-gh-token').value = d.githubToken;
-    if (d.githubOwner) document.getElementById('inp-gh-owner').value = d.githubOwner;
-    if (d.githubRepo) document.getElementById('inp-gh-repo').value = d.githubRepo;
-    setStatus('status-settings', 'Configurazione cloud caricata ✓', 'ok');
-  } else {
-   setStatus('status-settings', '⚠️ .settings/config.json non trovato.', 'err');
-  }
- } catch(e) { 
-  setStatus('status-settings', 'Errore caricamento cloud.', 'err');
- }
- const saved = localStorage.getItem('storybook_settings');
+    if(d) {
+      if (d.groq) document.getElementById('inp-apikey').value = d.groq;
+      if (d.googleApiKey) {
+        if(!document.getElementById('inp-google-apikey')) {
+          const inp = document.createElement('input');
+          inp.id = 'inp-google-apikey';
+          inp.type = 'hidden';
+          document.body.appendChild(inp);
+        }
+        document.getElementById('inp-google-apikey').value = d.googleApiKey;
+      }
+      if (d.githubToken) document.getElementById('inp-gh-token').value = d.githubToken;
+      if (d.githubOwner) document.getElementById('inp-gh-owner').value = d.githubOwner;
+      if (d.githubRepo) document.getElementById('inp-gh-repo').value = d.githubRepo;
+      setStatus('status-settings', 'Configurazione caricata ✓', 'ok');
+    } else {
+      setStatus('status-settings', '⚠️ Config non trovato.', 'err');
+    }
+  };
+  loadConfig();
+  const saved = localStorage.getItem('storybook_settings');
  if(saved){
   const d = JSON.parse(saved);
   document.getElementById('inp-textmodel').value = d.textModel || 'llama-3.3-70b-versatile';
