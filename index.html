@@ -494,16 +494,20 @@ document.getElementById('btn-save-keys').addEventListener('click', () => {
   const ghToken = document.getElementById('inp-gh-token').value.trim();
   const ghOwner = document.getElementById('inp-gh-owner').value.trim();
   const ghRepo = document.getElementById('inp-gh-repo').value.trim();
-  console.log('Saving keys:', { apiKey: apiKey?.slice(0,10), ghOwner, ghRepo });
+  alert('Click rilevato! Valori: ' + apiKey?.slice(0,8) + ' | ' + ghToken?.slice(0,10));
   if(!apiKey && !ghToken) {
     setStatus('status-settings', 'Inserisci almeno una chiave prima.','err');
     return;
   }
-  if(apiKey) localStorage.setItem('storybook_apikey', apiKey);
-  if(ghToken) localStorage.setItem('storybook_gh_token', ghToken);
-  if(ghOwner) localStorage.setItem('storybook_gh_owner', ghOwner);
-  if(ghRepo) localStorage.setItem('storybook_gh_repo', ghRepo);
-  console.log('Saved to localStorage:', localStorage.getItem('storybook_apikey')?.slice(0,10));
+  try {
+    if(apiKey) localStorage.setItem('storybook_apikey', apiKey);
+    if(ghToken) localStorage.setItem('storybook_gh_token', ghToken);
+    if(ghOwner) localStorage.setItem('storybook_gh_owner', ghOwner);
+    if(ghRepo) localStorage.setItem('storybook_gh_repo', ghRepo);
+    alert('Salvato! Verifico... ' + localStorage.getItem('storybook_apikey')?.slice(0,8));
+  } catch(e) {
+    alert('Errore localStorage: ' + e);
+  }
   setStatus('status-settings', 'Chiavi salvate! ✓', 'ok');
 });
 document.getElementById('inp-textmodel').addEventListener('change', () => {
