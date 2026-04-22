@@ -484,7 +484,7 @@ async function genImg(idx){
   const prompt = `Children book illustration: ${ch.text.slice(0, 200)}. Characters: ${ch.characters.join(', ')}. Soft colors, whimsical style.`;
   try {
     if(!S.googleApiKey) throw new Error('Google API key non configurata');
-    const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview:generateContent?key=${S.googleApiKey}`;
+    const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${S.googleApiKey}`;
     const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(targetUrl);
     const res = await fetch(proxyUrl, {
       method: 'POST',
