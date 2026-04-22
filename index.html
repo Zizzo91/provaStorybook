@@ -58,13 +58,6 @@ h1,h2,h3{font-family:var(--font-display)}
 .status.ok{color:var(--green)}
 .status.warn{color:var(--orange)}
 .status.err{color:var(--red)}
-.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:16px}
-.char-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
-.char-top{display:flex;gap:12px;margin-bottom:12px}
-.char-thumb{width:96px;height:96px;border-radius:10px;flex-shrink:0;background:var(--surface3);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;text-align:center}
-.char-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.char-info{flex:1;min-width:0}
-.char-info .field{margin-bottom:8px}
 .story-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;white-space:pre-wrap;font-size:14px;line-height:1.7;min-height:60px;color:var(--text)}
 .chapter-list{display:flex;flex-direction:column;gap:16px}
 .ch-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
@@ -109,17 +102,10 @@ h1,h2,h3{font-family:var(--font-display)}
      <option value="qwen-qwq-32b">qwen-qwq-32b</option>
      <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
      <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-    </select>
-   </div>
-   <div class="field">
-    <label>Modello vision</label>
-    <select id="inp-visionmodel">
-     <option value="meta-llama/llama-4-scout-17b-16e-instruct">llama-4-scout</option>
-     <option value="meta-llama/llama-4-maverick-17b-128e-instruct">llama-4-maverick</option>
-    </select>
-   </div>
-   
-   <div style="display:none">
+</select>
+    </div>
+    
+    <div style="display:none">
     <input type="password" id="inp-apikey">
     <input type="password" id="inp-gh-token">
     <input type="text" id="inp-gh-owner">
@@ -158,14 +144,7 @@ h1,h2,h3{font-family:var(--font-display)}
   </div>
  </div>
 
- <div class="card mb20">
-  <div class="card-title">🧑‍🎨 Protagonisti</div>
-  <div class="card-sub">Descrivi i personaggi per coerenza visiva.</div>
-  <button class="btn btn-ghost btn-sm" id="btn-add-char">+ Aggiungi personaggio</button>
-  <div class="char-grid" id="char-grid"></div>
- </div>
-
- <div class="card mb20">
+<div class="card mb20">
   <div class="card-title">📄 Versione raffinata</div>
   <div class="story-box" id="short-story-box">Nessun testo raffinato.</div>
  </div>
@@ -183,12 +162,9 @@ const S = {
   apiKey: '', googleApiKey: '',
   ghToken: '', ghOwner: '', ghRepo: '',
   textModel: 'llama-3.3-70b-versatile',
-  visionModel: 'meta-llama/llama-4-scout-17b-16e-instruct',
   title: '', audience: '', tone: '', idea: '', shortVersion: '',
-  chapters: [], characters: []
+  chapters: []
 };
-let _uid = 0;
-function uid(){ return 'c'+(++_uid)+'_'+Math.random().toString(36).slice(2,7); }
 function setStatus(id,msg,type=''){
  const el=document.getElementById(id);
  if(!el) return;
@@ -219,12 +195,13 @@ function extractJson(raw){
 function readInputs(){
   S.apiKey=document.getElementById('inp-apikey').value.trim();
   S.googleApiKey=document.getElementById('inp-google-apikey')?.value.trim() || S.apiKey;
+  localStorage.setItem('storybook_apikey', S.apiKey);
+  localStorage.setItem('storybook_google_apikey', S.googleApiKey);
   S.ghToken=document.getElementById('inp-gh-token').value.trim();
  S.ghOwner=document.getElementById('inp-gh-owner').value.trim();
  S.ghRepo=document.getElementById('inp-gh-repo').value.trim();
- S.textModel=document.getElementById('inp-textmodel').value;
- S.visionModel=document.getElementById('inp-visionmodel').value;
- S.title=document.getElementById('inp-title').value.trim();
+S.textModel=document.getElementById('inp-textmodel').value;
+  S.title=document.getElementById('inp-title').value.trim();
  S.audience=document.getElementById('inp-audience').value.trim();
  S.tone=document.getElementById('inp-tone').value.trim();
  S.idea=document.getElementById('inp-idea').value.trim();
@@ -242,24 +219,6 @@ async function callGroqText({ prompt, temperature=0.7, maxTokens=3500 }){
  });
  const data = await res.json();
  if(!res.ok) throw new Error(data.error?.message || 'Errore Groq');
- return data.choices[0].message.content.trim();
-}
-async function callGroqVision({ prompt, imageDataUrl }){
- if(!S.apiKey) throw new Error('⚠️ Groq API key non caricata. Verifica .settings/config.json.');
- const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
- method:'POST',
- headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${S.apiKey}` },
- body: JSON.stringify({
- model: S.visionModel,
- messages: [{ role:'user', content:[
- { type:'text', text: prompt },
- { type:'image_url', image_url:{ url: imageDataUrl } }
- ]}],
- temperature: 0.4, max_tokens: 1000
- })
- });
- const data = await res.json();
- if(!res.ok) throw new Error(data.error?.message || 'Errore Groq Vision');
  return data.choices[0].message.content.trim();
 }
 document.getElementById('btn-github-save').addEventListener('click', async ()=>{
@@ -280,8 +239,7 @@ document.getElementById('btn-github-save').addEventListener('click', async ()=>{
  tone: S.tone,
  idea: S.idea,
  shortVersion: S.shortVersion,
- characters: S.characters.map(c => ({ name: c.name, description: c.description })),
- chapters: S.chapters.map(ch => ({ number: ch.number, title: ch.title, text: ch.text, characters: ch.characters })),
+chapters: S.chapters.map(ch => ({ number: ch.number, title: ch.title, text: ch.text, characters: ch.characters })),
  timestamp: new Date().toISOString()
  };
  const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(storyData, null, 2))));
@@ -353,26 +311,26 @@ window.addEventListener('load', async ()=>{
       setStatus('status-settings', '⚠️ Config non trovato.', 'err');
     }
   };
-  loadConfig();
+loadConfig();
+  const savedApiKey = localStorage.getItem('storybook_apikey');
+  if(savedApiKey && !document.getElementById('inp-apikey').value) {
+    document.getElementById('inp-apikey').value = savedApiKey;
+  }
+  const savedGoogleKey = localStorage.getItem('storybook_google_apikey');
+  if(savedGoogleKey && document.getElementById('inp-google-apikey')) {
+    document.getElementById('inp-google-apikey').value = savedGoogleKey;
+  }
   const saved = localStorage.getItem('storybook_settings');
- if(saved){
-  const d = JSON.parse(saved);
-  document.getElementById('inp-textmodel').value = d.textModel || 'llama-3.3-70b-versatile';
-  document.getElementById('inp-visionmodel').value = d.visionModel || 'meta-llama/llama-4-scout-17b-16e-instruct';
- }
- readInputs();
+  if(saved){
+   const d = JSON.parse(saved);
+   document.getElementById('inp-textmodel').value = d.textModel || 'llama-3.3-70b-versatile';
+  }
+  readInputs();
 });
 document.getElementById('inp-textmodel').addEventListener('change', () => {
- localStorage.setItem('storybook_settings', JSON.stringify({
-  textModel: document.getElementById('inp-textmodel').value,
-  visionModel: document.getElementById('inp-visionmodel').value
- }));
-});
-document.getElementById('inp-visionmodel').addEventListener('change', () => {
- localStorage.setItem('storybook_settings', JSON.stringify({
-  textModel: document.getElementById('inp-textmodel').value,
-  visionModel: document.getElementById('inp-visionmodel').value
- }));
+  localStorage.setItem('storybook_settings', JSON.stringify({
+   textModel: document.getElementById('inp-textmodel').value
+  }));
 });
 document.getElementById('btn-refine').addEventListener('click', async ()=>{
  readInputs();
@@ -406,56 +364,6 @@ document.getElementById('btn-genstory').addEventListener('click', async ()=>{
  } catch(e) { setStatus('status-story', e.message, 'err'); }
  finally { btn.disabled = false; }
 });
-document.getElementById('btn-add-char').addEventListener('click', ()=>{
- const id = uid();
- S.characters.push({ id, name: '', description: '', imageDataUrl: '' });
- renderCharacters();
-});
-function renderCharacters(){
- const grid = document.getElementById('char-grid');
- grid.innerHTML = '';
- S.characters.forEach(char => {
- const card = document.createElement('div');
- card.className = 'char-card';
- card.innerHTML = `
- <div class="char-top">
- <div class="char-thumb" id="thumb-${char.id}">${char.imageDataUrl ? `<img src="${char.imageDataUrl}">` : 'No img'}</div>
- <div class="char-info">
- <div class="field"><label>Nome</label><input type="text" value="${char.name}" oninput="updateChar('${char.id}','name',this.value)"></div>
- <div class="field"><label>Immagine</label><input type="file" onchange="uploadImg('${char.id}',this)"></div>
- </div>
- </div>
- <div class="field"><label>Descrizione</label><textarea id="desc-${char.id}" oninput="updateChar('${char.id}','description',this.value)">${char.description}</textarea></div>
- <button class="btn btn-cyan btn-sm" onclick="analyzeChar('${char.id}')">🔍 Analizza</button>
- `;
- grid.appendChild(card);
- });
-}
-function updateChar(id, key, val){
- const c = S.characters.find(x => x.id === id);
- if(c) c[key] = val;
-}
-async function uploadImg(id, input){
- const file = input.files[0];
- if(!file) return;
- const reader = new FileReader();
- reader.onload = e => {
- updateChar(id, 'imageDataUrl', e.target.result);
- renderCharacters();
- };
- reader.readAsDataURL(file);
-}
-async function analyzeChar(id){
- const c = S.characters.find(x => x.id === id);
- if(!c || !c.imageDataUrl) return alert('Carica un\'immagine.');
- setStatus('status-story','Analisi personaggio...','warn');
- try {
- const res = await callGroqVision({ prompt: 'Descrivi l\'aspetto fisico di questo personaggio per un libro illustrato per bambini.', imageDataUrl: c.imageDataUrl });
- c.description = res;
- renderCharacters();
- setStatus('status-story','Analisi completata!','ok');
- } catch(e) { alert(e.message); }
-}
 function renderChapters(){
  const list = document.getElementById('chapter-list');
  list.innerHTML = '';
@@ -516,13 +424,18 @@ async function genImg(idx){
 function genPrompt(idx) {
   const ch = S.chapters[idx];
   const chars = ch.characters || [];
-  const scene = ch.number === 1 ? 'A child and parents indoors, looking at TV or discovery' :
-               ch.number === 2 ? 'Child playing with toys, excited' :
-               ch.number === 3 ? 'Child exploring outdoors with parent' :
-               ch.number === 4 ? 'Family visiting a bell tower' :
-               `Child ${ch.title.toLowerCase()}`;
-  const names = chars.slice(0, 3).join(' and ') || 'characters';
-  const prompt = `Children's book illustration: ${names} ${scene}. Soft pastel colors, whimsical cute style, 1:1 square. Ref: ${chars.map(c => c + '.jpg').join(', ')}`;
+  const charRefs = chars.map((c, i) => {
+    const role = c.toLowerCase().includes('simone') || c.toLowerCase().includes('papà') ? 'il papà' :
+               c.toLowerCase().includes('michela') || c.toLowerCase().includes('mamm') ? 'la mamma' :
+               c.toLowerCase().includes('gabriele') ? 'Gabriele' : c;
+    return `${c}.jpg (${role})`;
+  }).join(', ');
+  const prevRef = idx > 0 ? ` (coerente con immagine precedente Cap.${idx})` : '';
+  const prompt = `Crea un'immagine per il mio storybook. Il paragrafo per il quale chiedo l'immagine è la seguente scena:
+${ch.text.slice(0, 400)}
+
+In allegato trovi alcuni personaggi (${charRefs}) che possono tornare utili per la scena. Mantieni la coerenza con lo stile dell'immagine precedente${prevRef}.
+Non inserire testi, li inserirò dopo io.`;
   const box = document.getElementById(`prompt-${idx}`);
   box.style.display = 'block';
   box.textContent = prompt;
