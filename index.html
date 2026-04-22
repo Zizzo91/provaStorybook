@@ -516,15 +516,13 @@ async function genImg(idx){
 function genPrompt(idx) {
   const ch = S.chapters[idx];
   const chars = ch.characters || [];
-  let prompt = `Children's book illustration: ${ch.text.slice(0, 300)}. `;
-  if(chars.length > 0) {
-    prompt += `Characters to include: ${chars.join(', ')}. `;
-    chars.forEach(c => {
-      const found = S.characters.find(x => x.name.toLowerCase() === c.toLowerCase());
-      if(found) prompt += `[Use ${c}.jpg] `;
-    });
-  }
-  prompt += `Soft pastel colors, whimsical style, 1:1 aspect ratio.`;
+  const scene = ch.number === 1 ? 'A child and parents indoors, looking at TV or discovery' :
+               ch.number === 2 ? 'Child playing with toys, excited' :
+               ch.number === 3 ? 'Child exploring outdoors with parent' :
+               ch.number === 4 ? 'Family visiting a bell tower' :
+               `Child ${ch.title.toLowerCase()}`;
+  const names = chars.slice(0, 3).join(' and ') || 'characters';
+  const prompt = `Children's book illustration: ${names} ${scene}. Soft pastel colors, whimsical cute style, 1:1 square. Ref: ${chars.map(c => c + '.jpg').join(', ')}`;
   const box = document.getElementById(`prompt-${idx}`);
   box.style.display = 'block';
   box.textContent = prompt;
