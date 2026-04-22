@@ -105,12 +105,22 @@ h1,h2,h3{font-family:var(--font-display)}
 </select>
     </div>
     
-    <div style="display:none">
-    <input type="password" id="inp-apikey">
-    <input type="password" id="inp-gh-token">
-    <input type="text" id="inp-gh-owner">
-    <input type="text" id="inp-gh-repo">
-   </div>
+<div class="field">
+     <label>Groq API Key</label>
+     <input type="text" id="inp-apikey" placeholder="gsk_...">
+    </div>
+<div class="field">
+     <label>GitHub Repo</label>
+     <input type="text" id="inp-gh-repo" placeholder="Storybook">
+    </div>
+    <div class="field">
+     <label>Nome storia da caricare</label>
+     <input type="text" id="inp-story-name" placeholder="es. ale-e-i-video">
+    </div>
+    <div class="row">
+     <div class="field"><label>GitHub Owner</label><input type="text" id="inp-gh-owner" placeholder="Zizzo91"></div>
+     <div class="field"><label>GitHub Repo</label><input type="text" id="inp-gh-repo" placeholder="Storybook"></div>
+    </div>
    
    <div class="row" style="margin-top:10px">
     <div id="status-settings" class="status"></div>
@@ -138,7 +148,8 @@ h1,h2,h3{font-family:var(--font-display)}
    <div style="display:flex; gap:10px; margin-top:10px;">
     <button class="btn btn-ghost" id="btn-refine">✨ Raffina idea</button>
     <button class="btn btn-accent" id="btn-genstory">📚 Genera 10 capitoli</button>
-    <button class="btn btn-green" id="btn-github-save">📤 Salva su GitHub</button>
+    <button class="btn btn-cyan" id="btn-github-load">📥 Carica storia</button>
+   <button class="btn btn-green" id="btn-github-save">📤 Salva su GitHub</button>
    </div>
    <div id="status-story" class="status"></div>
   </div>
@@ -275,8 +286,45 @@ chapters: S.chapters.map(ch => ({ number: ch.number, title: ch.title, text: ch.t
  } catch (e) {
  setStatus('status-story', e.message, 'err');
  } finally {
- btn.disabled = false;
- }
+btn.disabled = false;
+  }
+});
+document.getElementById('btn-github-load').addEventListener('click', async ()=>{
+  readInputs();
+  if(!S.ghToken || !S.ghOwner || !S.ghRepo){
+    setStatus('status-story','GitHub non configurato. Inserisci token, owner e repo.','err');
+    return;
+  }
+  const btn = document.getElementById('btn-github-load');
+  btn.disabled = true;
+  const storyName = document.getElementById('inp-story-name').value.trim() || S.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  const path = `stories/${storyName}.json`;
+  setStatus('status-story','Caricamento...','warn');
+  try {
+    const res = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`, {
+      headers: { 'Authorization': `token ${S.ghToken}` }
+    });
+    if(!res.ok) throw new Error(res.status === 404 ? 'Storia non trovata' : 'Errore: ' + res.status);
+    const data = await res.json();
+    const json = JSON.parse(atob(data.content));
+    S.title = json.title;
+    S.audience = json.audience;
+    S.tone = json.tone;
+    S.idea = json.idea;
+    S.shortVersion = json.shortVersion;
+    S.chapters = json.chapters || [];
+    document.getElementById('inp-title').value = S.title;
+    document.getElementById('inp-audience').value = S.audience || '';
+    document.getElementById('inp-tone').value = S.tone || '';
+    document.getElementById('inp-idea').value = S.idea || '';
+    document.getElementById('short-story-box').textContent = S.shortVersion || 'Nessun testo.';
+    renderChapters();
+    setStatus('status-story','Storia caricata! ✓','ok');
+  } catch(e) {
+    setStatus('status-story', e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
 });
 window.addEventListener('load', async ()=>{
   const loadConfig = async () => {
