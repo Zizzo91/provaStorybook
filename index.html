@@ -78,6 +78,7 @@ h1,h2,h3{font-family:var(--font-display)}
 .img-preview{width:100%;aspect-ratio:1/1;border-radius:10px;background:var(--surface3);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;padding:12px;margin-top:10px}
 .img-preview img{width:100%;height:100%;object-fit:cover;display:block}
 .hint{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.5}
+.prompt-box{word-break:break-word;font-family:monospace;font-size:11px;line-height:1.4}
 .empty{color:var(--muted);font-size:14px;padding:16px 0}
 @keyframes shimmer{0%{opacity:.6}50%{opacity:1}100%{opacity:.6}}
 .loading{animation:shimmer 1.4s ease-in-out infinite}
@@ -466,13 +467,15 @@ function renderChapters(){
  <h3>Cap. ${ch.number}: ${ch.title}</h3>
  <div class="ch-tags">${ch.characters.map(n => `<span class="ch-tag">${n}</span>`).join('')}</div>
  </div>
- <div class="ch-body">
- <div class="ch-text">${ch.text}</div>
- <div class="right">
- <button class="btn btn-green" onclick="genImg(${ch.number-1})">🎨 Immagine</button>
- <div class="img-preview" id="img-${ch.number-1}">Nessuna immagine</div>
- </div>
- </div>
+<div class="ch-body">
+  <div class="ch-text">${ch.text}</div>
+  <div class="right">
+  <button class="btn btn-cyan" onclick="genPrompt(${ch.number-1})">📝 Prompt</button>
+  <button class="btn btn-green" onclick="genImg(${ch.number-1})">🎨 Immagine</button>
+  <div class="img-preview" id="img-${ch.number-1}">Nessuna immagine</div>
+  <div class="prompt-box" id="prompt-${ch.number-1}" style="display:none;margin-top:8px;font-size:12px;background:var(--surface3);padding:8px;border-radius:6px;word-break:break-word"></div>
+  </div>
+  </div>
  `;
  list.appendChild(card);
  });
@@ -484,23 +487,23 @@ async function genImg(idx){
   const prompt = `Children book illustration: ${ch.text.slice(0, 200)}. Characters: ${ch.characters.join(', ')}. Soft colors, whimsical style.`;
   try {
     if(!S.googleApiKey) throw new Error('Google API key non configurata');
-    const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${S.googleApiKey}`;
-    const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(targetUrl);
-    const res = await fetch(proxyUrl, {
+    const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${S.googleApiKey}`;
+    const res = await fetch(targetUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseModalities: ['IMAGE'] }
+        contents: [{ parts: [{ text: prompt }] }]
       })
     });
-    if(!res.ok) throw new Error('API error: ' + res.status);
+    if(!res.ok) throw new Error('API error: ' + res.statusText);
     const data = await res.json();
-    if(data.candidates && data.candidates[0].content.parts[0].inlineData) {
-      const base64 = data.candidates[0].content.parts[0].inlineData.data;
-      el.innerHTML = `<img src="data:image/png;base64,${base64}">`;
+    const part = data.candidates?.[0]?.content?.parts?.[0];
+    if(part?.inlineData?.data) {
+      const b64 = part.inlineData.data;
+      const mime = part.inlineData.mimeType || 'image/png';
+      el.innerHTML = `<img src="data:${mime};base64,${b64}">`;
     } else {
-      throw new Error('Nessuna immagine generata');
+      throw new Error('Nessuna immagine nella risposta');
     }
   } catch(e) {
     el.innerHTML = `<div class="err" style="color:var(--red)">Nano Banana errore: ${e.message}. Uso fallback...</div>`;
@@ -509,6 +512,24 @@ async function genImg(idx){
     img.src = url;
     img.onload = () => el.innerHTML = `<img src="${url}">`;
   }
+}
+function genPrompt(idx) {
+  const ch = S.chapters[idx];
+  const chars = ch.characters || [];
+  let prompt = `Children's book illustration: ${ch.text.slice(0, 300)}. `;
+  if(chars.length > 0) {
+    prompt += `Characters to include: ${chars.join(', ')}. `;
+    chars.forEach(c => {
+      const found = S.characters.find(x => x.name.toLowerCase() === c.toLowerCase());
+      if(found) prompt += `[Use ${c}.jpg] `;
+    });
+  }
+  prompt += `Soft pastel colors, whimsical style, 1:1 aspect ratio.`;
+  const box = document.getElementById(`prompt-${idx}`);
+  box.style.display = 'block';
+  box.textContent = prompt;
+  navigator.clipboard.writeText(prompt);
+  setStatus('status-story', 'Prompt copiato!', 'ok');
 }
 </script>
 </body>
