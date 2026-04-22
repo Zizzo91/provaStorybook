@@ -118,8 +118,12 @@ h1,h2,h3{font-family:var(--font-display)}
      <div class="field"><label>Repo</label><input type="text" id="inp-gh-repo" placeholder="Storybook"></div>
     </div>
     <div class="field">
-     <label>Nome storia da caricare</label>
-     <input type="text" id="inp-story-name" placeholder="es. ale-e-i-video">
+     <label>Carica storia</label>
+     <select id="inp-story-select">
+      <option value="">-- Seleziona storia --</option>
+     </select>
+     <button class="btn btn-ghost btn-sm" id="btn-list-stories" style="margin-top:4px">📋 Lista storie</button>
+     <button class="btn btn-red btn-sm" id="btn-delete-story" style="margin-top:4px">🗑️ Elimina</button>
     </div>
    
    <div class="row" style="margin-top:10px">
@@ -238,10 +242,11 @@ async function callGroqText({ prompt, temperature=0.7, maxTokens=3500 }){
 }
 document.getElementById('btn-github-save').addEventListener('click', async ()=>{
  readInputs();
- if(!S.ghToken || !S.ghOwner || !S.ghRepo){
- setStatus('status-story','GitHub non configurato correttamente in .settings/config.json.','err');
- return;
- }
+if(!S.ghToken || !S.ghOwner || !S.ghRepo){
+  setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');
+  return;
+  }
+  console.log('Saving to:', S.ghOwner, S.ghRepo, 'Token:', S.ghToken?.slice(0,10));
  const btn = document.getElementById('btn-github-save');
  btn.disabled = true;
  setStatus('status-story','Salvataggio su GitHub...','warn');
@@ -259,20 +264,24 @@ chapters: S.chapters.map(ch => ({ number: ch.number, title: ch.title, text: ch.t
  };
  const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(storyData, null, 2))));
  
- let sha = '';
- const checkRes = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`, {
- headers: { 'Authorization': `token ${S.ghToken}` }
- });
- if(checkRes.ok) {
- const checkData = await checkRes.json();
- sha = checkData.sha;
- }
- const saveRes = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`, {
- method: 'PUT',
- headers: {
- 'Authorization': `token ${S.ghToken}`,
- 'Content-Type': 'application/json'
- },
+const apiUrl = `https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`;
+  let sha = '';
+  const checkRes = await fetch(apiUrl, {
+  headers: { 'Authorization': `token ${S.ghToken}`, 'Accept': 'application/vnd.github.v3+json' }
+  });
+  if(checkRes.ok) {
+  const checkData = await checkRes.json();
+  sha = checkData.sha;
+  } else if(checkRes.status === 404) {
+  }
+  setStatus('status-story',`Salvo in ${S.ghOwner}/${S.ghRepo}...`,'warn');
+const saveRes = await fetch(apiUrl, {
+  method: 'PUT',
+  headers: {
+  'Authorization': `token ${S.ghToken}`,
+  'Content-Type': 'application/json',
+  'Accept': 'application/vnd.github.v3+json'
+  },
  body: JSON.stringify({
  message: `Save story: ${S.title}`,
  content: contentBase64,
@@ -325,6 +334,80 @@ document.getElementById('btn-github-load').addEventListener('click', async ()=>{
     setStatus('status-story', e.message, 'err');
   } finally {
     btn.disabled = false;
+  }
+});
+document.getElementById('btn-list-stories').addEventListener('click', async ()=>{
+  readInputs();
+  if(!S.ghToken || !S.ghOwner || !S.ghRepo){
+    setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');
+    return;
+  }
+  const btn = document.getElementById('btn-list-stories');
+  btn.disabled = true;
+  setStatus('status-story','Carico lista storie...','warn');
+  try {
+    const res = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/stories`, {
+      headers: { 'Authorization': `token ${S.ghToken}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if(!res.ok) throw new Error(res.status === 404 ? 'Nessuna storia salvata' : 'Errore: ' + res.status);
+    const files = await res.json();
+    const select = document.getElementById('inp-story-select');
+    select.innerHTML = '<option value="">-- Seleziona storia --</option>';
+    files.forEach(f => {
+      if(f.name.endsWith('.json')) {
+        const opt = document.createElement('option');
+        opt.value = f.name.replace('.json','');
+        opt.textContent = f.name.replace('.json','');
+        select.appendChild(opt);
+      }
+    });
+    setStatus('status-story',`Trovate ${files.length} storie!_seleziona dalla tendina.`);
+  } catch(e) {
+    setStatus('status-story', e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+document.getElementById('inp-story-select').addEventListener('change', () => {
+  const storyName = document.getElementById('inp-story-select').value;
+  if(storyName) {
+    document.getElementById('btn-github-load').click();
+  }
+});
+document.getElementById('btn-delete-story').addEventListener('click', async ()=>{
+  readInputs();
+  if(!S.ghToken || !S.ghOwner || !S.ghRepo){
+    setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');
+    return;
+  }
+  const storyName = document.getElementById('inp-story-select').value;
+  if(!storyName) return setStatus('status-story','Seleziona una storia da eliminare.','err');
+  if(!confirm('Eliminare la storia "' + storyName + '"?')) return;
+  const path = `stories/${storyName}.json`;
+  setStatus('status-story','Eliminazione...','warn');
+  try {
+    const getRes = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`, {
+      headers: { 'Authorization': `token ${S.ghToken}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if(!getRes.ok) throw new Error('Storia non trovata');
+    const fileData = await getRes.json();
+    const delRes = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`, {
+      method: 'DELETE',
+      headers: { 
+        'Authorization': `token ${S.ghToken}`, 
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify({
+        message: `Delete story: ${storyName}`,
+        sha: fileData.sha
+      })
+    });
+    if(!delRes.ok) throw new Error('Errore eliminazione');
+    setStatus('status-story','Storia eliminata! ✓','ok');
+    document.getElementById('btn-list-stories').click();
+  } catch(e) {
+    setStatus('status-story', e.message, 'err');
   }
 });
 window.addEventListener('load', async ()=>{
