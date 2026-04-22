@@ -459,56 +459,43 @@ window.addEventListener('load', async ()=>{
     }
   };
 loadConfig();
-  const savedApiKey = localStorage.getItem('storybook_apikey');
+  const savedApiKey = localStorage.getItem('storybook_apikey') || '';
+  const savedGhToken = localStorage.getItem('storybook_gh_token') || '';
+  const savedGhOwner = localStorage.getItem('storybook_gh_owner') || '';
+  const savedGhRepo = localStorage.getItem('storybook_gh_repo') || '';
   if(savedApiKey && !document.getElementById('inp-apikey').value) {
     document.getElementById('inp-apikey').value = savedApiKey;
   }
-  const savedGoogleKey = localStorage.getItem('storybook_google_apikey');
-  if(savedGoogleKey && document.getElementById('inp-google-apikey')) {
-    document.getElementById('inp-google-apikey').value = savedGoogleKey;
-  }
-  const savedGhToken = localStorage.getItem('storybook_gh_token');
   if(savedGhToken && !document.getElementById('inp-gh-token').value) {
     document.getElementById('inp-gh-token').value = savedGhToken;
   }
-  const savedGhOwner = localStorage.getItem('storybook_gh_owner');
   if(savedGhOwner && !document.getElementById('inp-gh-owner').value) {
     document.getElementById('inp-gh-owner').value = savedGhOwner;
   }
-  const savedGhRepo = localStorage.getItem('storybook_gh_repo');
   if(savedGhRepo && !document.getElementById('inp-gh-repo').value) {
     document.getElementById('inp-gh-repo').value = savedGhRepo;
-  }
-  if(S.ghToken && S.ghOwner && S.ghRepo) {
-    setTimeout(() => document.getElementById('btn-list-stories')?.click(), 500);
   }
   const saved = localStorage.getItem('storybook_settings');
   if(saved){
    const d = JSON.parse(saved);
    document.getElementById('inp-textmodel').value = d.textModel || 'llama-3.3-70b-versatile';
   }
-  readInputs();
 });
 document.getElementById('btn-save-keys').addEventListener('click', () => {
   const apiKey = document.getElementById('inp-apikey').value.trim();
   const ghToken = document.getElementById('inp-gh-token').value.trim();
   const ghOwner = document.getElementById('inp-gh-owner').value.trim();
   const ghRepo = document.getElementById('inp-gh-repo').value.trim();
-  alert('Click rilevato! Valori: ' + apiKey?.slice(0,8) + ' | ' + ghToken?.slice(0,10));
   if(!apiKey && !ghToken) {
     setStatus('status-settings', 'Inserisci almeno una chiave prima.','err');
     return;
   }
-  try {
-    if(apiKey) localStorage.setItem('storybook_apikey', apiKey);
-    if(ghToken) localStorage.setItem('storybook_gh_token', ghToken);
-    if(ghOwner) localStorage.setItem('storybook_gh_owner', ghOwner);
-    if(ghRepo) localStorage.setItem('storybook_gh_repo', ghRepo);
-    alert('Salvato! Verifico... ' + localStorage.getItem('storybook_apikey')?.slice(0,8));
-  } catch(e) {
-    alert('Errore localStorage: ' + e);
-  }
-  setStatus('status-settings', 'Chiavi salvate! ✓', 'ok');
+  localStorage.setItem('storybook_apikey', apiKey || '');
+  localStorage.setItem('storybook_gh_token', ghToken || '');
+  localStorage.setItem('storybook_gh_owner', ghOwner || '');
+  localStorage.setItem('storybook_gh_repo', ghRepo || '');
+  alert('Chiavi salvate!\nGroq: ' + (apiKey ? apiKey.slice(0,12) + '...' : 'vuoto') + '\nGitHub: ' + (ghToken ? ghToken.slice(0,15) + '...' : 'vuoto'));
+  setStatus('status-settings', 'Chiavi salvate nel browser! ✓', 'ok');
 });
 document.getElementById('inp-textmodel').addEventListener('change', () => {
   localStorage.setItem('storybook_settings', JSON.stringify({
