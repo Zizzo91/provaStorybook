@@ -195,12 +195,15 @@ function extractJson(raw){
 function readInputs(){
   S.apiKey=document.getElementById('inp-apikey').value.trim();
   S.googleApiKey=document.getElementById('inp-google-apikey')?.value.trim() || S.apiKey;
-  localStorage.setItem('storybook_apikey', S.apiKey);
+localStorage.setItem('storybook_apikey', S.apiKey);
   localStorage.setItem('storybook_google_apikey', S.googleApiKey);
   S.ghToken=document.getElementById('inp-gh-token').value.trim();
- S.ghOwner=document.getElementById('inp-gh-owner').value.trim();
- S.ghRepo=document.getElementById('inp-gh-repo').value.trim();
-S.textModel=document.getElementById('inp-textmodel').value;
+  S.ghOwner=document.getElementById('inp-gh-owner').value.trim();
+  S.ghRepo=document.getElementById('inp-gh-repo').value.trim();
+  if(S.ghToken) localStorage.setItem('storybook_gh_token', S.ghToken);
+  if(S.ghOwner) localStorage.setItem('storybook_gh_owner', S.ghOwner);
+  if(S.ghRepo) localStorage.setItem('storybook_gh_repo', S.ghRepo);
+  S.textModel=document.getElementById('inp-textmodel').value;
   S.title=document.getElementById('inp-title').value.trim();
  S.audience=document.getElementById('inp-audience').value.trim();
  S.tone=document.getElementById('inp-tone').value.trim();
@@ -303,9 +306,18 @@ window.addEventListener('load', async ()=>{
         }
         document.getElementById('inp-google-apikey').value = d.googleApiKey;
       }
-      if (d.githubToken) document.getElementById('inp-gh-token').value = d.githubToken;
-      if (d.githubOwner) document.getElementById('inp-gh-owner').value = d.githubOwner;
-      if (d.githubRepo) document.getElementById('inp-gh-repo').value = d.githubRepo;
+      if (d.githubToken) {
+        document.getElementById('inp-gh-token').value = d.githubToken;
+        localStorage.setItem('storybook_gh_token', d.githubToken);
+      }
+      if (d.githubOwner) {
+        document.getElementById('inp-gh-owner').value = d.githubOwner;
+        localStorage.setItem('storybook_gh_owner', d.githubOwner);
+      }
+      if (d.githubRepo) {
+        document.getElementById('inp-gh-repo').value = d.githubRepo;
+        localStorage.setItem('storybook_gh_repo', d.githubRepo);
+      }
       setStatus('status-settings', 'Configurazione caricata ✓', 'ok');
     } else {
       setStatus('status-settings', '⚠️ Config non trovato.', 'err');
@@ -319,6 +331,18 @@ loadConfig();
   const savedGoogleKey = localStorage.getItem('storybook_google_apikey');
   if(savedGoogleKey && document.getElementById('inp-google-apikey')) {
     document.getElementById('inp-google-apikey').value = savedGoogleKey;
+  }
+  const savedGhToken = localStorage.getItem('storybook_gh_token');
+  if(savedGhToken && !document.getElementById('inp-gh-token').value) {
+    document.getElementById('inp-gh-token').value = savedGhToken;
+  }
+  const savedGhOwner = localStorage.getItem('storybook_gh_owner');
+  if(savedGhOwner && !document.getElementById('inp-gh-owner').value) {
+    document.getElementById('inp-gh-owner').value = savedGhOwner;
+  }
+  const savedGhRepo = localStorage.getItem('storybook_gh_repo');
+  if(savedGhRepo && !document.getElementById('inp-gh-repo').value) {
+    document.getElementById('inp-gh-repo').value = savedGhRepo;
   }
   const saved = localStorage.getItem('storybook_settings');
   if(saved){
