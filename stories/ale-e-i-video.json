@@ -1,0 +1,109 @@
+{
+  "title": "Ale e i video",
+  "audience": "bambini di 3 anni",
+  "tone": "dolce",
+  "idea": "Alessandro, un piccolo esploratore di 3 anni e mezzo, era incantato dalla TV. I suoi genitori, Michela e Simone, dovevano impostare un timer per limitare il tempo di visione, ma lui non voleva mai spegnerla. Un giorno, mentre guardava un video di campanili su YouTube, Gabriele, suo fratellino di un anno e mezzo, gli si avvicinò e disse: \"Alessandro, vuoi costruire un campanile con me?\" Alessandro fu tentato e insieme iniziarono a costruire con i Lego. Scoprì che costruire era più divertente che guardare la TV. Da quel giorno, Alessandro imparò a bilanciare il tempo di visione con il gioco e l'esplorazione. Michela e Simone lo incoraggiarono a scoprire il mondo fuori, mostrandogli come le campane e i campanili fossero ancora più belli dal vivo. Alessandro capì che c'era un mondo intero da scoprire e che la TV era solo una parte di esso.",
+  "shortVersion": "Alessandro, un piccolo esploratore di 3 anni e mezzo, amava guardare la TV. I suoi genitori, Michela e Simone, dovevano mettere un timer per non farlo guardare troppo. Un giorno, mentre guardava un video di campanili, suo fratellino Gabriele gli disse: \"Vuoi costruire un campanile con me?\" Alessandro fu curioso e iniziarono a costruire con i Lego. Scoprì che costruire era più divertente che guardare la TV! Da quel giorno, Alessandro imparò a giocare e a esplorare il mondo fuori. Michela e Simone lo portarono a vedere i campanili veri e lui rimase incantato. Capì che c'era un mondo grande e bello da scoprire e che la TV era solo una parte di esso. Alessandro era felice di avere trovato un nuovo modo di giocare e di imparare.",
+  "characters": [
+    {
+      "name": "Alessandro",
+      "description": "Il personaggio è un ragazzo con i capelli castani. Indossa una felpa blu con una striscia verde lungo le maniche e una zip verde al centro. Ha pantaloni neri con una striscia verde lungo il fianco e scarpe nere con una striscia verde."
+    }
+  ],
+  "chapters": [
+    {
+      "number": 1,
+      "title": "Il piccolo esploratore",
+      "text": "Alessandro, un piccolo esploratore di 3 anni e mezzo, amava guardare la TV. I suoi genitori, Michela e Simone, dovevano mettere un timer per non farlo guardare troppo.",
+      "characters": [
+        "Alessandro",
+        "Michela",
+        "Simone"
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Un'idea divertente",
+      "text": "Un giorno, mentre guardava un video di campanili, suo fratellino Gabriele gli disse: 'Vuoi costruire un campanile con me?' Alessandro fu curioso e iniziarono a costruire con i Lego.",
+      "characters": [
+        "Alessandro",
+        "Gabriele"
+      ]
+    },
+    {
+      "number": 3,
+      "title": "La scoperta del costruire",
+      "text": "Alessandro scoprì che costruire era più divertente che guardare la TV! Da quel giorno, Alessandro imparò a giocare e a esplorare il mondo fuori.",
+      "characters": [
+        "Alessandro"
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Un mondo da scoprire",
+      "text": "Michela e Simone lo portarono a vedere i campanili veri e lui rimase incantato. Capì che c'era un mondo grande e bello da scoprire e che la TV era solo una parte di esso.",
+      "characters": [
+        "Alessandro",
+        "Michela",
+        "Simone"
+      ]
+    },
+    {
+      "number": 5,
+      "title": "Un nuovo modo di giocare",
+      "text": "Alessandro era felice di avere trovato un nuovo modo di giocare e di imparare. Era entusiasta di continuare a esplorare e a scoprire nuove cose.",
+      "characters": [
+        "Alessandro"
+      ]
+    },
+    {
+      "number": 6,
+      "title": "Un'avventura in giardino",
+      "text": "Un giorno, Alessandro decise di esplorare il giardino di casa sua. Scoprì un piccolo stagno con dei pesci e delle piante acquatiche. Fu affascinato dalla vita che si nascondeva in quel piccolo angolo del mondo.",
+      "characters": [
+        "Alessandro"
+      ]
+    },
+    {
+      "number": 7,
+      "title": "L'aiuto di Gabriele",
+      "text": "Gabriele, il suo fratellino, lo raggiunse in giardino e insieme iniziarono a esplorare il territorio. Trovarono un nido di uccelli e osservarono i piccoli uccellini che si preparavano a volare per la prima volta.",
+      "characters": [
+        "Alessandro",
+        "Gabriele"
+      ]
+    },
+    {
+      "number": 8,
+      "title": "La scoperta della natura",
+      "text": "Alessandro e Gabriele passarono ore a esplorare il giardino e a scoprire i segreti della natura. Impararono a riconoscere le diverse specie di piante e animali e a rispettarli.",
+      "characters": [
+        "Alessandro",
+        "Gabriele"
+      ]
+    },
+    {
+      "number": 9,
+      "title": "Un progetto di giardinaggio",
+      "text": "Michela e Simone notarono l'interesse dei loro figli per la natura e decisero di aiutarli a creare un progetto di giardinaggio. Insieme, piantarono fiori e verdure e impararono a prendersene cura.",
+      "characters": [
+        "Alessandro",
+        "Gabriele",
+        "Michela",
+        "Simone"
+      ]
+    },
+    {
+      "number": 10,
+      "title": "Un'estate di scoperte",
+      "text": "L'estate si rivelò essere un periodo di scoperte e di avventure per Alessandro e la sua famiglia. Impararono a valorizzare il tempo trascorso insieme e a scoprire il mondo che li circondava.",
+      "characters": [
+        "Alessandro",
+        "Gabriele",
+        "Michela",
+        "Simone"
+      ]
+    }
+  ],
+  "timestamp": "2026-04-22T09:22:38.900Z"
+}

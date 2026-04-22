@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Storybook Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="dark"]{
+ --bg:#0d1117;
+ --surface:#161b22;
+ --surface2:#1c2230;
+ --surface3:#21293a;
+ --border:rgba(255,255,255,0.08);
+ --text:#e6edf3;
+ --muted:#7d8590;
+ --faint:#3d444d;
+ --accent:#58a6ff;
+ --green:#3fb950;
+ --cyan:#39c5cf;
+ --red:#f85149;
+ --orange:#d29922;
+ --shadow:0 8px 24px rgba(0,0,0,0.4);
+ --radius:12px;
+ --font-body:'Inter',sans-serif;
+ --font-display:'Nunito',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
+h1,h2,h3{font-family:var(--font-display)}
+.container{max-width:1280px;margin:0 auto;padding:24px 20px 80px}
+.header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px 24px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}
+.header-title{display:flex;align-items:center;gap:12px}
+.header-title h1{font-size:22px;font-weight:800;background:linear-gradient(135deg,#58a6ff,#39c5cf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid var(--border);font-size:12px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.card-title{font-size:16px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.card-sub{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5}
+.mb20{margin-bottom:20px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:13px;font-weight:600;color:#8b949e}
+.field input,.field textarea,.field select{background:var(--surface2);color:var(--text);border:1px solid var(--faint);border-radius:8px;padding:9px 12px;font-size:14px;font-family:var(--font-body);outline:none;transition:border-color .15s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
+.field textarea{min-height:90px;resize:vertical}
+.btn{border:none;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:opacity .15s,transform .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover:not(:disabled){opacity:.85;transform:translateY(-1px)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-accent{background:var(--accent);color:#0d1117}
+.btn-green{background:var(--green);color:#0d1117}
+.btn-cyan{background:var(--cyan);color:#0d1117}
+.btn-red{background:var(--red);color:#fff}
+.btn-ghost{background:transparent;border:1px solid var(--faint);color:var(--text)}
+.status{min-height:20px;font-size:13px;color:var(--muted);margin-top:10px}
+.status.ok{color:var(--green)}
+.status.warn{color:var(--orange)}
+.status.err{color:var(--red)}
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:16px}
+.char-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.char-top{display:flex;gap:12px;margin-bottom:12px}
+.char-thumb{width:96px;height:96px;border-radius:10px;flex-shrink:0;background:var(--surface3);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;text-align:center}
+.char-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.char-info{flex:1;min-width:0}
+.char-info .field{margin-bottom:8px}
+.story-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;white-space:pre-wrap;font-size:14px;line-height:1.7;min-height:60px;color:var(--text)}
+.chapter-list{display:flex;flex-direction:column;gap:16px}
+.ch-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.ch-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.ch-head h3{font-size:15px;font-weight:700;font-family:var(--font-display)}
+.ch-summary{font-size:13px;color:var(--muted);margin-top:2px}
+.ch-tags{display:flex;gap:6px;flex-wrap:wrap}
+.ch-tag{padding:3px 10px;border-radius:999px;background:rgba(88,166,255,0.12);border:1px solid rgba(88,166,255,0.25);font-size:12px;color:var(--accent)}
+.ch-body{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.ch-text{font-size:14px;line-height:1.7;white-space:pre-wrap}
+.img-preview{width:100%;aspect-ratio:1/1;border-radius:10px;background:var(--surface3);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;padding:12px;margin-top:10px}
+.img-preview img{width:100%;height:100%;object-fit:cover;display:block}
+.hint{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.5}
+.empty{color:var(--muted);font-size:14px;padding:16px 0}
+@keyframes shimmer{0%{opacity:.6}50%{opacity:1}100%{opacity:.6}}
+.loading{animation:shimmer 1.4s ease-in-out infinite}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}.ch-body{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+ <div class="header">
+  <div class="header-title">
+   <h1>AI Storybook Studio</h1>
+  </div>
+  <div class="header-pills">
+   <span class="pill" id="pill-provider">Groq</span>
+   <span class="pill" id="pill-text-model">llama-3.3-70b</span>
+   <span class="pill">Pollinations.AI</span>
+  </div>
+ </div>
+ <div class="grid2">
+  <div class="card">
+   <div class="card-title">⚙️ Modelli</div>
+   <div class="card-sub">Seleziona i motori AI per la tua storia.</div>
+   
+   <div class="field">
+    <label>Modello testo</label>
+    <select id="inp-textmodel">
+     <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+     <option value="qwen-qwq-32b">qwen-qwq-32b</option>
+     <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
+     <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+    </select>
+   </div>
+   <div class="field">
+    <label>Modello vision</label>
+    <select id="inp-visionmodel">
+     <option value="meta-llama/llama-4-scout-17b-16e-instruct">llama-4-scout</option>
+     <option value="meta-llama/llama-4-maverick-17b-128e-instruct">llama-4-maverick</option>
+    </select>
+   </div>
+   
+   <div style="display:none">
+    <input type="password" id="inp-apikey">
+    <input type="password" id="inp-gh-token">
+    <input type="text" id="inp-gh-owner">
+    <input type="text" id="inp-gh-repo">
+   </div>
+   
+   <div class="row" style="margin-top:10px">
+    <div id="status-settings" class="status"></div>
+   </div>
+  </div>
+  <div class="card">
+   <div class="card-title">💡 Idea storia</div>
+   <div class="card-sub">Compila i campi e genera la narrazione.</div>
+   
+   <div class="field">
+    <label>Titolo / tema principale</label>
+    <input type="text" id="inp-title" placeholder="Es. Il bosco delle stelle">
+   </div>
+   
+   <div class="row">
+    <div class="field"><label>Target</label><input type="text" id="inp-audience" placeholder="bambini 4-7 anni"></div>
+    <div class="field"><label>Tono</label><input type="text" id="inp-tone" placeholder="dolce, magico"></div>
+   </div>
+   
+   <div class="field">
+    <label>Idea base</label>
+    <textarea id="inp-idea" placeholder="Scrivi qui la tua idea originale..."></textarea>
+   </div>
+   
+   <div style="display:flex; gap:10px; margin-top:10px;">
+    <button class="btn btn-ghost" id="btn-refine">✨ Raffina idea</button>
+    <button class="btn btn-accent" id="btn-genstory">📚 Genera 10 capitoli</button>
+    <button class="btn btn-green" id="btn-github-save">📤 Salva su GitHub</button>
+   </div>
+   <div id="status-story" class="status"></div>
+  </div>
+ </div>
+
+ <div class="card mb20">
+  <div class="card-title">🧑‍🎨 Protagonisti</div>
+  <div class="card-sub">Descrivi i personaggi per coerenza visiva.</div>
+  <button class="btn btn-ghost btn-sm" id="btn-add-char">+ Aggiungi personaggio</button>
+  <div class="char-grid" id="char-grid"></div>
+ </div>
+
+ <div class="card mb20">
+  <div class="card-title">📄 Versione raffinata</div>
+  <div class="story-box" id="short-story-box">Nessun testo raffinato.</div>
+ </div>
+
+ <div class="card">
+  <div class="card-title">📖 Capitoli della storia</div>
+  <div class="chapter-list" id="chapter-list">
+   <div class="empty">Nessun capitolo generato.</div>
+  </div>
+ </div>
+</div>
+
+<script>
+const S = {
+  apiKey: '', googleApiKey: '',
+  ghToken: '', ghOwner: '', ghRepo: '',
+  textModel: 'llama-3.3-70b-versatile',
+  visionModel: 'meta-llama/llama-4-scout-17b-16e-instruct',
+  title: '', audience: '', tone: '', idea: '', shortVersion: '',
+  chapters: [], characters: []
+};
+let _uid = 0;
+function uid(){ return 'c'+(++_uid)+'_'+Math.random().toString(36).slice(2,7); }
+function setStatus(id,msg,type=''){
+ const el=document.getElementById(id);
+ if(!el) return;
+ el.textContent=msg;
+ el.className='status'+(type?' '+type:'');
+}
+function stripFences(t){
+ return t.trim()
+ .replace(/^```json\s*/i,'')
+ .replace(/^```\s*/i,'')
+ .replace(/\s*```$/,'')
+ .trim();
+}
+function extractJson(raw){
+ const cleaned = stripFences(raw);
+ try { return JSON.parse(cleaned); } catch {}
+ const first = Math.min(
+ cleaned.indexOf('{') === -1 ? Infinity : cleaned.indexOf('{'),
+ cleaned.indexOf('[') === -1 ? Infinity : cleaned.indexOf('[')
+ );
+ if(first === Infinity) throw new Error('Nessun JSON trovato.');
+ const opener = cleaned[first];
+ const closer = opener === '{' ? '}' : ']';
+ const last = cleaned.lastIndexOf(closer);
+ if(last === -1) throw new Error('JSON incompleto.');
+ return JSON.parse(cleaned.slice(first, last + 1));
+}
+function readInputs(){
+  S.apiKey=document.getElementById('inp-apikey').value.trim();
+  S.googleApiKey=document.getElementById('inp-google-apikey')?.value.trim() || S.apiKey;
+  S.ghToken=document.getElementById('inp-gh-token').value.trim();
+ S.ghOwner=document.getElementById('inp-gh-owner').value.trim();
+ S.ghRepo=document.getElementById('inp-gh-repo').value.trim();
+ S.textModel=document.getElementById('inp-textmodel').value;
+ S.visionModel=document.getElementById('inp-visionmodel').value;
+ S.title=document.getElementById('inp-title').value.trim();
+ S.audience=document.getElementById('inp-audience').value.trim();
+ S.tone=document.getElementById('inp-tone').value.trim();
+ S.idea=document.getElementById('inp-idea').value.trim();
+}
+async function callGroqText({ prompt, temperature=0.7, maxTokens=3500 }){
+ if(!S.apiKey) throw new Error('⚠️ Groq API key non caricata. Verifica .settings/config.json.');
+ const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+ method:'POST',
+ headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${S.apiKey}` },
+ body: JSON.stringify({
+ model: S.textModel,
+ messages: [{ role:'user', content: prompt }],
+ temperature, max_tokens: maxTokens
+ })
+ });
+ const data = await res.json();
+ if(!res.ok) throw new Error(data.error?.message || 'Errore Groq');
+ return data.choices[0].message.content.trim();
+}
+async function callGroqVision({ prompt, imageDataUrl }){
+ if(!S.apiKey) throw new Error('⚠️ Groq API key non caricata. Verifica .settings/config.json.');
+ const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+ method:'POST',
+ headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${S.apiKey}` },
+ body: JSON.stringify({
+ model: S.visionModel,
+ messages: [{ role:'user', content:[
+ { type:'text', text: prompt },
+ { type:'image_url', image_url:{ url: imageDataUrl } }
+ ]}],
+ temperature: 0.4, max_tokens: 1000
+ })
+ });
+ const data = await res.json();
+ if(!res.ok) throw new Error(data.error?.message || 'Errore Groq Vision');
+ return data.choices[0].message.content.trim();
+}
+document.getElementById('btn-github-save').addEventListener('click', async ()=>{
+ readInputs();
+ if(!S.ghToken || !S.ghOwner || !S.ghRepo){
+ setStatus('status-story','GitHub non configurato correttamente in .settings/config.json.','err');
+ return;
+ }
+ const btn = document.getElementById('btn-github-save');
+ btn.disabled = true;
+ setStatus('status-story','Salvataggio su GitHub...','warn');
+ try {
+ const slug = (S.title || 'storia-senza-titolo').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+ const path = `stories/${slug}.json`;
+ const storyData = {
+ title: S.title,
+ audience: S.audience,
+ tone: S.tone,
+ idea: S.idea,
+ shortVersion: S.shortVersion,
+ characters: S.characters.map(c => ({ name: c.name, description: c.description })),
+ chapters: S.chapters.map(ch => ({ number: ch.number, title: ch.title, text: ch.text, characters: ch.characters })),
+ timestamp: new Date().toISOString()
+ };
+ const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(storyData, null, 2))));
+ 
+ let sha = '';
+ const checkRes = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`, {
+ headers: { 'Authorization': `token ${S.ghToken}` }
+ });
+ if(checkRes.ok) {
+ const checkData = await checkRes.json();
+ sha = checkData.sha;
+ }
+ const saveRes = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`, {
+ method: 'PUT',
+ headers: {
+ 'Authorization': `token ${S.ghToken}`,
+ 'Content-Type': 'application/json'
+ },
+ body: JSON.stringify({
+ message: `Save story: ${S.title}`,
+ content: contentBase64,
+ sha: sha || undefined
+ })
+ });
+ if(!saveRes.ok) {
+ const err = await saveRes.json();
+ throw new Error(err.message || 'Errore salvataggio GitHub');
+ }
+ setStatus('status-story','Storia salvata con successo su GitHub! ✓','ok');
+ } catch (e) {
+ setStatus('status-story', e.message, 'err');
+ } finally {
+ btn.disabled = false;
+ }
+});
+window.addEventListener('load', async ()=>{
+ try {
+  const cloudRes = await fetch('.settings/config.json');
+if (cloudRes.ok) {
+    const d = await cloudRes.json();
+    if (d.groq) document.getElementById('inp-apikey').value = d.groq;
+    if (d.googleApiKey) {
+      if(!document.getElementById('inp-google-apikey')) {
+        const inp = document.createElement('input');
+        inp.id = 'inp-google-apikey';
+        inp.type = 'hidden';
+        document.body.appendChild(inp);
+      }
+      document.getElementById('inp-google-apikey').value = d.googleApiKey;
+    }
+    if (d.githubToken) document.getElementById('inp-gh-token').value = d.githubToken;
+    if (d.githubOwner) document.getElementById('inp-gh-owner').value = d.githubOwner;
+    if (d.githubRepo) document.getElementById('inp-gh-repo').value = d.githubRepo;
+    setStatus('status-settings', 'Configurazione cloud caricata ✓', 'ok');
+  } else {
+   setStatus('status-settings', '⚠️ .settings/config.json non trovato.', 'err');
+  }
+ } catch(e) { 
+  setStatus('status-settings', 'Errore caricamento cloud.', 'err');
+ }
+ const saved = localStorage.getItem('storybook_settings');
+ if(saved){
+  const d = JSON.parse(saved);
+  document.getElementById('inp-textmodel').value = d.textModel || 'llama-3.3-70b-versatile';
+  document.getElementById('inp-visionmodel').value = d.visionModel || 'meta-llama/llama-4-scout-17b-16e-instruct';
+ }
+ readInputs();
+});
+document.getElementById('inp-textmodel').addEventListener('change', () => {
+ localStorage.setItem('storybook_settings', JSON.stringify({
+  textModel: document.getElementById('inp-textmodel').value,
+  visionModel: document.getElementById('inp-visionmodel').value
+ }));
+});
+document.getElementById('inp-visionmodel').addEventListener('change', () => {
+ localStorage.setItem('storybook_settings', JSON.stringify({
+  textModel: document.getElementById('inp-textmodel').value,
+  visionModel: document.getElementById('inp-visionmodel').value
+ }));
+});
+document.getElementById('btn-refine').addEventListener('click', async ()=>{
+ readInputs();
+ if(!S.idea) return setStatus('status-story','Scrivi un\'idea base.','err');
+ const btn = document.getElementById('btn-refine');
+ btn.disabled = true;
+ setStatus('status-story','Raffinamento...','warn');
+ try {
+ const res = await callGroqText({ prompt: `Raffina questa idea per una storia: ${S.idea}. Target: ${S.audience}. Tono: ${S.tone}. Restituisci circa 150 parole in italiano.` });
+ S.shortVersion = res;
+ document.getElementById('short-story-box').textContent = res;
+ setStatus('status-story','Idea raffinata! ✓','ok');
+ } catch(e) { setStatus('status-story', e.message, 'err'); }
+ finally { btn.disabled = false; }
+});
+document.getElementById('btn-genstory').addEventListener('click', async ()=>{
+ readInputs();
+ const btn = document.getElementById('btn-genstory');
+ btn.disabled = true;
+ setStatus('status-story','Generazione capitoli (1-5)...','warn');
+ try {
+ const prompt = `Genera i primi 5 capitoli di una storia basata su: ${S.shortVersion || S.idea}. Restituisci SOLO un array JSON: [{"number":1,"title":"...","text":"...","characters":["..."]}]`;
+ const res1 = await callGroqText({ prompt });
+ const chapters1 = extractJson(res1);
+ setStatus('status-story','Generazione capitoli (6-10)...','warn');
+ const res2 = await callGroqText({ prompt: `Continua la storia dopo questi capitoli: ${res1}. Genera i capitoli 6-10. Stesso formato JSON.` });
+ const chapters2 = extractJson(res2);
+ S.chapters = [...chapters1, ...chapters2];
+ renderChapters();
+ setStatus('status-story','10 capitoli pronti! ✓','ok');
+ } catch(e) { setStatus('status-story', e.message, 'err'); }
+ finally { btn.disabled = false; }
+});
+document.getElementById('btn-add-char').addEventListener('click', ()=>{
+ const id = uid();
+ S.characters.push({ id, name: '', description: '', imageDataUrl: '' });
+ renderCharacters();
+});
+function renderCharacters(){
+ const grid = document.getElementById('char-grid');
+ grid.innerHTML = '';
+ S.characters.forEach(char => {
+ const card = document.createElement('div');
+ card.className = 'char-card';
+ card.innerHTML = `
+ <div class="char-top">
+ <div class="char-thumb" id="thumb-${char.id}">${char.imageDataUrl ? `<img src="${char.imageDataUrl}">` : 'No img'}</div>
+ <div class="char-info">
+ <div class="field"><label>Nome</label><input type="text" value="${char.name}" oninput="updateChar('${char.id}','name',this.value)"></div>
+ <div class="field"><label>Immagine</label><input type="file" onchange="uploadImg('${char.id}',this)"></div>
+ </div>
+ </div>
+ <div class="field"><label>Descrizione</label><textarea id="desc-${char.id}" oninput="updateChar('${char.id}','description',this.value)">${char.description}</textarea></div>
+ <button class="btn btn-cyan btn-sm" onclick="analyzeChar('${char.id}')">🔍 Analizza</button>
+ `;
+ grid.appendChild(card);
+ });
+}
+function updateChar(id, key, val){
+ const c = S.characters.find(x => x.id === id);
+ if(c) c[key] = val;
+}
+async function uploadImg(id, input){
+ const file = input.files[0];
+ if(!file) return;
+ const reader = new FileReader();
+ reader.onload = e => {
+ updateChar(id, 'imageDataUrl', e.target.result);
+ renderCharacters();
+ };
+ reader.readAsDataURL(file);
+}
+async function analyzeChar(id){
+ const c = S.characters.find(x => x.id === id);
+ if(!c || !c.imageDataUrl) return alert('Carica un\'immagine.');
+ setStatus('status-story','Analisi personaggio...','warn');
+ try {
+ const res = await callGroqVision({ prompt: 'Descrivi l\'aspetto fisico di questo personaggio per un libro illustrato per bambini.', imageDataUrl: c.imageDataUrl });
+ c.description = res;
+ renderCharacters();
+ setStatus('status-story','Analisi completata!','ok');
+ } catch(e) { alert(e.message); }
+}
+function renderChapters(){
+ const list = document.getElementById('chapter-list');
+ list.innerHTML = '';
+ S.chapters.forEach(ch => {
+ const card = document.createElement('div');
+ card.className = 'ch-card';
+ card.innerHTML = `
+ <div class="ch-head">
+ <h3>Cap. ${ch.number}: ${ch.title}</h3>
+ <div class="ch-tags">${ch.characters.map(n => `<span class="ch-tag">${n}</span>`).join('')}</div>
+ </div>
+ <div class="ch-body">
+ <div class="ch-text">${ch.text}</div>
+ <div class="right">
+ <button class="btn btn-green" onclick="genImg(${ch.number-1})">🎨 Immagine</button>
+ <div class="img-preview" id="img-${ch.number-1}">Nessuna immagine</div>
+ </div>
+ </div>
+ `;
+ list.appendChild(card);
+ });
+}
+async function genImg(idx){
+  const ch = S.chapters[idx];
+  const el = document.getElementById(`img-${idx}`);
+  el.innerHTML = '<div class="loading">Generazione con Nano Banana...</div>';
+  const prompt = `Children book illustration: ${ch.text.slice(0, 200)}. Characters: ${ch.characters.join(', ')}. Soft colors, whimsical style.`;
+  try {
+    if(!S.googleApiKey) throw new Error('Google API key non configurata');
+    const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview:generateContent?key=${S.googleApiKey}`;
+    const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(targetUrl);
+    const res = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseModalities: ['IMAGE'] }
+      })
+    });
+    if(!res.ok) throw new Error('API error: ' + res.status);
+    const data = await res.json();
+    if(data.candidates && data.candidates[0].content.parts[0].inlineData) {
+      const base64 = data.candidates[0].content.parts[0].inlineData.data;
+      el.innerHTML = `<img src="data:image/png;base64,${base64}">`;
+    } else {
+      throw new Error('Nessuna immagine generata');
+    }
+  } catch(e) {
+    el.innerHTML = `<div class="err" style="color:var(--red)">Nano Banana errore: ${e.message}. Uso fallback...</div>`;
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${Math.floor(Math.random()*99999)}&nologo=true`;
+    const img = new Image();
+    img.src = url;
+    img.onload = () => el.innerHTML = `<img src="${url}">`;
+  }
+}
+</script>
+</body>
+</html>
