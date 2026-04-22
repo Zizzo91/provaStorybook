@@ -459,15 +459,23 @@ window.addEventListener('load', async ()=>{
     }
   };
 window.addEventListener('load', async () => {
-  loadConfig();
+  await loadConfig();
   const savedApiKey = localStorage.getItem('storybook_apikey') || '';
   const savedGhToken = localStorage.getItem('storybook_gh_token') || '';
   const savedGhOwner = localStorage.getItem('storybook_gh_owner') || '';
   const savedGhRepo = localStorage.getItem('storybook_gh_repo') || '';
-  if(savedApiKey) document.getElementById('inp-apikey').value = savedApiKey;
-  if(savedGhToken) document.getElementById('inp-gh-token').value = savedGhToken;
-  if(savedGhOwner) document.getElementById('inp-gh-owner').value = savedGhOwner;
-  if(savedGhRepo) document.getElementById('inp-gh-repo').value = savedGhRepo;
+  if(savedApiKey && !document.getElementById('inp-apikey').value) {
+    document.getElementById('inp-apikey').value = savedApiKey;
+  }
+  if(savedGhToken && !document.getElementById('inp-gh-token').value) {
+    document.getElementById('inp-gh-token').value = savedGhToken;
+  }
+  if(savedGhOwner && !document.getElementById('inp-gh-owner').value) {
+    document.getElementById('inp-gh-owner').value = savedGhOwner;
+  }
+  if(savedGhRepo && !document.getElementById('inp-gh-repo').value) {
+    document.getElementById('inp-gh-repo').value = savedGhRepo;
+  }
 });
 document.getElementById('btn-save-keys').addEventListener('click', () => {
   const apiKey = document.getElementById('inp-apikey').value.trim();
@@ -478,19 +486,11 @@ document.getElementById('btn-save-keys').addEventListener('click', () => {
     setStatus('status-settings', 'Inserisci almeno una chiave prima.','err');
     return;
   }
-  localStorage.removeItem('storybook_apikey');
-  localStorage.removeItem('storybook_gh_token');
-  localStorage.removeItem('storybook_gh_owner');
-  localStorage.removeItem('storybook_gh_repo');
-  localStorage.removeItem('storybook_google_apikey');
-  setTimeout(() => {
-    localStorage.setItem('storybook_apikey', apiKey);
-    if(ghToken) localStorage.setItem('storybook_gh_token', ghToken);
-    if(ghOwner) localStorage.setItem('storybook_gh_owner', ghOwner);
-    if(ghRepo) localStorage.setItem('storybook_gh_repo', ghRepo);
-    alert('Chiavi sovrascritte! Ricarica la pagina (F5)');
-    setStatus('status-settings', 'Chiavi salvate! ✓', 'ok');
-  }, 100);
+  if(apiKey) localStorage.setItem('storybook_apikey', apiKey);
+  if(ghToken) localStorage.setItem('storybook_gh_token', ghToken);
+  if(ghOwner) localStorage.setItem('storybook_gh_owner', ghOwner);
+  if(ghRepo) localStorage.setItem('storybook_gh_repo', ghRepo);
+  setStatus('status-settings', 'Chiavi salvate! ✓', 'ok');
 });
 document.getElementById('inp-textmodel').addEventListener('change', () => {
   localStorage.setItem('storybook_settings', JSON.stringify({
