@@ -413,69 +413,43 @@ document.getElementById('btn-delete-story').addEventListener('click', async ()=>
     setStatus('status-story', e.message, 'err');
   }
 });
-window.addEventListener('load', async ()=>{
-  const loadConfig = async () => {
-    const repoOwner = 'Zizzo91';
-    const repoName = 'Storybook';
-    const paths = [
-      `settings/config.json`,
-      `config.json`,
-      `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/settings/config.json`,
-      `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/config.json`
-    ];
-    let d = null;
-    for(const p of paths) {
-      try {
-        const res = await fetch(p);
-        if(res.ok) { d = await res.json(); break; }
-      } catch{}
-    }
-    if(d) {
-      if (d.groq) document.getElementById('inp-apikey').value = d.groq;
-      if (d.googleApiKey) {
-        if(!document.getElementById('inp-google-apikey')) {
-          const inp = document.createElement('input');
-          inp.id = 'inp-google-apikey';
-          inp.type = 'hidden';
-          document.body.appendChild(inp);
-        }
-        document.getElementById('inp-google-apikey').value = d.googleApiKey;
-      }
-      if (d.githubToken && !localStorage.getItem('storybook_gh_token')) {
-        document.getElementById('inp-gh-token').value = d.githubToken;
-        localStorage.setItem('storybook_gh_token', d.githubToken);
-      }
-      if (d.githubOwner && !localStorage.getItem('storybook_gh_owner')) {
-        document.getElementById('inp-gh-owner').value = d.githubOwner;
-        localStorage.setItem('storybook_gh_owner', d.githubOwner);
-      }
-      if (d.githubRepo && !localStorage.getItem('storybook_gh_repo')) {
-        document.getElementById('inp-gh-repo').value = d.githubRepo;
-        localStorage.setItem('storybook_gh_repo', d.githubRepo);
-      }
-      setStatus('status-settings', 'Configurazione caricata ✓', 'ok');
-    } else {
-      setStatus('status-settings', '⚠️ Config non trovato.', 'err');
-    }
-  };
 window.addEventListener('load', async () => {
-  await loadConfig();
+  const repoOwner = 'Zizzo91';
+  const repoName = 'Storybook';
+  const paths = [
+    `settings/config.json`,
+    `config.json`,
+    `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/settings/config.json`,
+    `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/config.json`
+  ];
+  let d = null;
+  for(const p of paths) {
+    try {
+      const res = await fetch(p);
+      if(res.ok) { d = await res.json(); break; }
+    } catch{}
+  }
+  if(d) {
+    if (d.groq && !localStorage.getItem('storybook_apikey')) document.getElementById('inp-apikey').value = d.groq;
+    if (d.githubToken && !localStorage.getItem('storybook_gh_token')) {
+      document.getElementById('inp-gh-token').value = d.githubToken;
+    }
+    if (d.githubOwner && !localStorage.getItem('storybook_gh_owner')) {
+      document.getElementById('inp-gh-owner').value = d.githubOwner;
+    }
+    if (d.githubRepo && !localStorage.getItem('storybook_gh_repo')) {
+      document.getElementById('inp-gh-repo').value = d.githubRepo;
+    }
+    setStatus('status-settings', 'Configurazione caricata ✓', 'ok');
+  }
   const savedApiKey = localStorage.getItem('storybook_apikey') || '';
   const savedGhToken = localStorage.getItem('storybook_gh_token') || '';
   const savedGhOwner = localStorage.getItem('storybook_gh_owner') || '';
   const savedGhRepo = localStorage.getItem('storybook_gh_repo') || '';
-  if(savedApiKey && !document.getElementById('inp-apikey').value) {
-    document.getElementById('inp-apikey').value = savedApiKey;
-  }
-  if(savedGhToken && !document.getElementById('inp-gh-token').value) {
-    document.getElementById('inp-gh-token').value = savedGhToken;
-  }
-  if(savedGhOwner && !document.getElementById('inp-gh-owner').value) {
-    document.getElementById('inp-gh-owner').value = savedGhOwner;
-  }
-  if(savedGhRepo && !document.getElementById('inp-gh-repo').value) {
-    document.getElementById('inp-gh-repo').value = savedGhRepo;
-  }
+  if(savedApiKey) document.getElementById('inp-apikey').value = savedApiKey;
+  if(savedGhToken) document.getElementById('inp-gh-token').value = savedGhToken;
+  if(savedGhOwner) document.getElementById('inp-gh-owner').value = savedGhOwner;
+  if(savedGhRepo) document.getElementById('inp-gh-repo').value = savedGhRepo;
 });
 document.getElementById('btn-save-keys').addEventListener('click', () => {
   const apiKey = document.getElementById('inp-apikey').value.trim();
