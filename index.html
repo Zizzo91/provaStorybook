@@ -510,12 +510,13 @@ function renderChapters(){
  const card = document.createElement('div');
  card.className = 'ch-card';
  card.innerHTML = `
- <div class="ch-head">
- <h3>Cap. ${ch.number}: ${ch.title}</h3>
- <div class="ch-tags">${ch.characters.map(n => `<span class="ch-tag">${n}</span>`).join('')}</div>
- </div>
+<div class="ch-head">
+  <h3>Cap. ${ch.number}: ${ch.title}</h3>
+  <button class="btn btn-ghost btn-sm" onclick="editChapter(${ch.number-1})">✏️ Modifica</button>
+  <div class="ch-tags">${ch.characters.map(n => `<span class="ch-tag">${n}</span>`).join('')}</div>
+  </div>
 <div class="ch-body">
-  <div class="ch-text">${ch.text}</div>
+  <div class="ch-text" id="ch-text-${ch.number-1}">${ch.text}</div>
   <div class="right">
   <button class="btn btn-cyan" onclick="genPrompt(${ch.number-1})">📝 Prompt</button>
   <button class="btn btn-green" onclick="genImg(${ch.number-1})">🎨 Immagine</button>
@@ -558,6 +559,15 @@ async function genImg(idx){
     const img = new Image();
     img.src = url;
     img.onload = () => el.innerHTML = `<img src="${url}">`;
+  }
+}
+function editChapter(idx) {
+  const ch = S.chapters[idx];
+  const newText = prompt('Modifica il testo del capitolo:', ch.text);
+  if(newText !== null) {
+    ch.text = newText;
+    document.getElementById(`ch-text-${idx}`).textContent = newText;
+    setStatus('status-story', 'Capitolo modificato! ✓', 'ok');
   }
 }
 function genPrompt(idx) {
