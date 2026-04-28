@@ -4,6 +4,104 @@
   "tone": "dolce, istruttivo",
   "idea": "Alessandro, un bambino di 3 anni e mezzo, aveva l'abitudine di dormire nella culla vicino ai genitori, ma durante la notte si alzava e si univa a loro nel letto, dove c'era anche il suo fratellino Gabriele (di un anno e mezzo). Un giorno, la mamma Michela propose ad Alessandro di provare a dormire nella sua camera, con la promessa che poteva sempre tornare nel loro letto se ne aveva bisogno. Alessandro accettò e iniziò a dormire nel suo letto a castello. Per aiutarlo a superare la paura del buio, il papà Simone installò una luce \"smart\" chiamata \"Piccola\" che Alessandro poteva accendere e spegnere con i comandi vocali. Inoltre, mise una luce nel corridoio per aiutarlo a trovare la strada per arrivare dai genitori. Con il tempo, Alessandro divenne più coraggioso e non ebbe più bisogno di andare nel letto dei genitori. Anzi, iniziò a invitare il fratellino Gabriele a dormire con lui nella sua camera.",
   "shortVersion": "Alessandro, un bambino di 3 anni e mezzo, aveva l'abitudine di dormire nella culla vicino ai genitori, ma durante la notte si alzava e si univa a loro nel letto. Un giorno, la mamma Michela propose ad Alessandro di provare a dormire nella sua camera, con la promessa che poteva sempre tornare nel loro letto se ne aveva bisogno. Alessandro accettò e iniziò a dormire nel suo letto a castello. Per aiutarlo a superare la paura del buio, il papà Simone installò una luce \"smart\" chiamata \"Piccola\" che Alessandro poteva accendere e spegnere con i comandi vocali. Inoltre, mise una luce nel corridoio per aiutarlo a trovare la strada per arrivare dai genitori. Con il tempo, Alessandro divenne più coraggioso e non ebbe più bisogno di andare nel letto dei genitori. Anzi, iniziò a invitare il fratellino Gabriele a dormire con lui nella sua camera.",
-  "chapters": [],
-  "timestamp": "2026-04-28T06:12:34.489Z"
+  "chapters": [
+    {
+      "number": 1,
+      "title": "La culla vicino ai genitori",
+      "text": "Alessandro, un bambino di 3 anni e mezzo, aveva l'abitudine di dormire nella culla vicino ai genitori, ma durante la notte si alzava e si univa a loro nel letto.",
+      "characters": [
+        "Alessandro",
+        "Michela",
+        "Simone"
+      ]
+    },
+    {
+      "number": 2,
+      "title": "La proposta della mamma",
+      "text": "Un giorno, la mamma Michela propose ad Alessandro di provare a dormire nella sua camera, con la promessa che poteva sempre tornare nel loro letto se ne aveva bisogno.",
+      "characters": [
+        "Alessandro",
+        "Michela"
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Il letto a castello",
+      "text": "Alessandro accettò e iniziò a dormire nel suo letto a castello. Per aiutarlo a superare la paura del buio, il papà Simone installò una luce 'smart' chiamata 'Piccola' che Alessandro poteva accendere e spegnere con i comandi vocali.",
+      "characters": [
+        "Alessandro",
+        "Simone"
+      ]
+    },
+    {
+      "number": 4,
+      "title": "La luce nel corridoio",
+      "text": "Inoltre, il papà Simone mise una luce nel corridoio per aiutarlo a trovare la strada per arrivare dai genitori. Con il tempo, Alessandro divenne più coraggioso e non ebbe più bisogno di andare nel letto dei genitori.",
+      "characters": [
+        "Alessandro",
+        "Simone"
+      ]
+    },
+    {
+      "number": 5,
+      "title": "Il nuovo compagno di letto",
+      "text": "Anzi, iniziò a invitare il fratellino Gabriele a dormire con lui nella sua camera. Alessandro si sentiva felice e orgoglioso di poter condividere la sua stanza con il fratello.",
+      "characters": [
+        "Alessandro",
+        "Gabriele"
+      ]
+    },
+    {
+      "number": 6,
+      "title": "La routine serale",
+      "text": "Alessandro e Gabriele iniziarono a stabilire una routine serale, con la mamma Michela che li aiutava a prepararsi per andare a letto e il papà Simone che leggeva loro una storia prima di dormire.",
+      "characters": [
+        "Alessandro",
+        "Gabriele",
+        "Michela",
+        "Simone"
+      ]
+    },
+    {
+      "number": 7,
+      "title": "Le storie di Natale",
+      "text": "Con l'avvicinarsi del Natale, il papà Simone iniziò a leggere loro storie di Natale, parlando di Babbo Natale e dei regali che avrebbero ricevuto. Alessandro e Gabriele erano entusiasti all'idea di ricevere regali e non vedevano l'ora di aprire i pacchetti.",
+      "characters": [
+        "Alessandro",
+        "Gabriele",
+        "Simone"
+      ]
+    },
+    {
+      "number": 8,
+      "title": "La decorazione della casa",
+      "text": "La mamma Michela iniziò a decorare la casa per Natale, con luci, alberi e decorazioni. Alessandro e Gabriele aiutarono a mettere le decorazioni e a preparare la casa per le feste.",
+      "characters": [
+        "Alessandro",
+        "Gabriele",
+        "Michela"
+      ]
+    },
+    {
+      "number": 9,
+      "title": "La lettera a Babbo Natale",
+      "text": "Alessandro e Gabriele scrissero una lettera a Babbo Natale, chiedendo regali e promettendo di essere buoni. La mamma Michela aiutò a spedire la lettera e i due fratelli non vedevano l'ora di ricevere una risposta.",
+      "characters": [
+        "Alessandro",
+        "Gabriele",
+        "Michela"
+      ]
+    },
+    {
+      "number": 10,
+      "title": "La notte di Natale",
+      "text": "La notte di Natale arrivò finalmente e Alessandro e Gabriele non riuscivano a dormire per l'eccitazione. Il papà Simone li portò a vedere l'albero di Natale e i regali che Babbo Natale aveva lasciato. I due fratelli erano felici e contenti di avere ricevuto i regali che avevano chiesto.",
+      "characters": [
+        "Alessandro",
+        "Gabriele",
+        "Simone"
+      ]
+    }
+  ],
+  "timestamp": "2026-04-28T06:12:47.358Z"
 }
