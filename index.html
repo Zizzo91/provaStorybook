@@ -107,7 +107,6 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   overflow-x:hidden;
   background:rgba(15,22,35,0.7);
   backdrop-filter:blur(6px);
-  /* transizione apertura/chiusura */
   transition: width .28s cubic-bezier(.4,0,.2,1),
               min-width .28s cubic-bezier(.4,0,.2,1),
               opacity .22s ease,
@@ -133,7 +132,6 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 .divider{height:1px;background:var(--glass-border);margin:4px 0}
 
 /* ── TOGGLE BUTTON ── */
-/* striscia verticale sempre visibile tra sidebar e main */
 .sidebar-toggle-rail{
   width:var(--toggle-w);
   flex-shrink:0;
@@ -162,18 +160,9 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   position:sticky;
   top:20px;
 }
-.toggle-btn:hover{
-  background:rgba(79,142,247,0.15);
-}
-.toggle-btn svg{
-  width:16px;
-  height:16px;
-  transition:transform .28s cubic-bezier(.4,0,.2,1);
-}
-/* quando la sidebar è chiusa, specchia l'icona */
-.sidebar.collapsed ~ .sidebar-toggle-rail .toggle-btn svg{
-  transform:scaleX(-1);
-}
+.toggle-btn:hover{background:rgba(79,142,247,0.15);}
+.toggle-btn svg{width:16px;height:16px;transition:transform .28s cubic-bezier(.4,0,.2,1);}
+.sidebar.collapsed ~ .sidebar-toggle-rail .toggle-btn svg{transform:scaleX(-1);}
 
 /* ── MAIN ── */
 .main{
@@ -194,10 +183,7 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   backdrop-filter:blur(8px);
   position:relative;
 }
-.card-header{
-  display:flex;align-items:center;gap:10px;
-  margin-bottom:16px;
-}
+.card-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
 .card-icon{
   width:32px;height:32px;border-radius:8px;
   display:flex;align-items:center;justify-content:center;
@@ -318,7 +304,57 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 .ch-body{
   display:grid;grid-template-columns:1fr 320px;gap:0;
 }
-.ch-text-col{padding:18px 20px;font-size:13.5px;line-height:1.8;white-space:pre-wrap;border-right:1px solid var(--glass-border)}
+
+/* ── CHAPTER TEXT COL (inline edit) ── */
+.ch-text-col{
+  padding:18px 20px;
+  font-size:13.5px;line-height:1.8;
+  border-right:1px solid var(--glass-border);
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+/* testo leggibile in modalità view */
+.ch-text-view{
+  white-space:pre-wrap;
+  color:var(--text);
+  cursor:text;
+  flex:1;
+}
+/* textarea inline editing */
+.ch-text-edit{
+  display:none;
+  width:100%;
+  min-height:160px;
+  background:var(--surface2);
+  color:var(--text);
+  border:1px solid var(--accent);
+  border-radius:var(--radius-sm);
+  padding:10px 12px;
+  font-size:13.5px;
+  font-family:var(--font-body);
+  line-height:1.8;
+  resize:vertical;
+  outline:none;
+  box-shadow:0 0 0 3px var(--glow-accent);
+  flex:1;
+}
+/* barra azioni modifica */
+.ch-edit-actions{
+  display:none;
+  gap:8px;
+  align-items:center;
+}
+/* quando è in editing */
+.ch-text-col.editing .ch-text-view{display:none}
+.ch-text-col.editing .ch-text-edit{display:block}
+.ch-text-col.editing .ch-edit-actions{display:flex}
+.ch-text-col.editing .btn-edit-toggle{display:none}
+/* bottone modifica in header */
+.btn-edit-toggle{
+  /* visibile di default */
+}
+
 .ch-img-col{
   padding:16px;display:flex;flex-direction:column;gap:10px;
   background:rgba(255,255,255,0.01);
@@ -333,11 +369,23 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   color:var(--muted);font-size:12px;text-align:center;padding:12px;
 }
 .img-preview img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* prompt box migliorato */
 .prompt-box{
-  word-break:break-word;font-family:monospace;font-size:11.5px;line-height:1.5;
+  word-break:break-word;
+  font-family:monospace;font-size:11.5px;line-height:1.5;
   background:var(--surface3);padding:10px 12px;border-radius:8px;
   color:var(--text-soft);border:1px solid var(--faint);
   display:none;
+  position:relative;
+}
+.prompt-box.visible{display:block}
+.prompt-copy-hint{
+  margin-top:6px;
+  font-size:10.5px;
+  color:var(--green);
+  font-family:var(--font-body);
+  display:flex;align-items:center;gap:4px;
 }
 
 /* ── EMPTY ── */
@@ -439,7 +487,6 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   </aside>
 
   <!-- ── TOGGLE RAIL ── -->
-  <!-- Striscia verticale SEMPRE visibile, indipendente dalla sidebar -->
   <div class="sidebar-toggle-rail">
     <button class="toggle-btn" id="sidebar-toggle-btn" title="Nascondi pannello">
       <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -499,7 +546,7 @@ h1,h2,h3,h4{font-family:var(--font-display)}
         <div class="card-icon cyan">📖</div>
         <div>
           <div class="card-title">Capitoli della storia</div>
-          <div class="card-sub">Genera testo e immagini per ogni capitolo.</div>
+          <div class="card-sub">Clicca ✏️ per modificare il testo direttamente. Clicca 📝 per generare il prompt immagine da usare su Gemini.</div>
         </div>
       </div>
       <div class="chapter-list" id="chapter-list">
@@ -535,6 +582,7 @@ const S = {
   title:'', audience:'', tone:'', idea:'', shortVersion:'',
   chapters:[]
 };
+
 function setStatus(id,msg,type=''){
   const el=document.getElementById(id);
   if(!el) return;
@@ -590,6 +638,7 @@ async function callGroqText({prompt,temperature=0.7,maxTokens=3500}){
   return data.choices[0].message.content.trim();
 }
 
+// ── GitHub Save ──
 document.getElementById('btn-github-save').addEventListener('click',async()=>{
   readInputs();
   if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');return;}
@@ -616,6 +665,7 @@ document.getElementById('btn-github-save').addEventListener('click',async()=>{
   finally{btn.disabled=false;}
 });
 
+// ── GitHub Load ──
 document.getElementById('btn-github-load').addEventListener('click',async()=>{
   readInputs();
   if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','GitHub non configurato.','err');return;}
@@ -642,6 +692,7 @@ document.getElementById('btn-github-load').addEventListener('click',async()=>{
   finally{btn.disabled=false;}
 });
 
+// ── Lista storie ──
 document.getElementById('btn-list-stories').addEventListener('click',async()=>{
   readInputs();
   if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');return;}
@@ -672,6 +723,7 @@ document.getElementById('inp-story-select').addEventListener('change',()=>{
   if(document.getElementById('inp-story-select').value) document.getElementById('btn-github-load').click();
 });
 
+// ── Elimina storia ──
 document.getElementById('btn-delete-story').addEventListener('click',async()=>{
   readInputs();
   if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','GitHub non configurato.','err');return;}
@@ -693,6 +745,7 @@ document.getElementById('btn-delete-story').addEventListener('click',async()=>{
   }catch(e){setStatus('status-story',e.message,'err');}
 });
 
+// ── Salva chiavi ──
 document.getElementById('btn-save-keys').addEventListener('click',()=>{
   const apiKey=document.getElementById('inp-apikey').value.trim();
   const ghToken=document.getElementById('inp-gh-token').value.trim();
@@ -706,6 +759,7 @@ document.getElementById('btn-save-keys').addEventListener('click',()=>{
   setStatus('status-settings','Credenziali salvate ✓','ok');
 });
 
+// ── Raffina idea ──
 document.getElementById('btn-refine').addEventListener('click',async()=>{
   readInputs();
   if(!S.idea) return setStatus('status-story','Scrivi un\'idea base.','err');
@@ -721,6 +775,7 @@ document.getElementById('btn-refine').addEventListener('click',async()=>{
   finally{btn.disabled=false;}
 });
 
+// ── Genera capitoli ──
 document.getElementById('btn-genstory').addEventListener('click',async()=>{
   readInputs();
   const btn=document.getElementById('btn-genstory');
@@ -740,6 +795,7 @@ document.getElementById('btn-genstory').addEventListener('click',async()=>{
   finally{btn.disabled=false;}
 });
 
+// ── Render capitoli ──
 function renderChapters(){
   const list=document.getElementById('chapter-list');
   list.innerHTML='';
@@ -747,118 +803,185 @@ function renderChapters(){
     list.innerHTML='<div class="empty"><div class="empty-icon">🌙</div><p>Nessun capitolo generato.</p></div>';
     return;
   }
-  S.chapters.forEach(ch=>{
-    const card=document.createElement('div');
-    card.className='ch-card';
-    const tags=(ch.characters||[]).map(n=>`<span class="ch-tag">${n}</span>`).join('');
-    card.innerHTML=`
+  S.chapters.forEach((ch, idx) => {
+    const card = document.createElement('div');
+    card.className = 'ch-card';
+    const tags = (ch.characters||[]).map(n => `<span class="ch-tag">${escapeHtml(n)}</span>`).join('');
+
+    card.innerHTML = `
 <div class="ch-header">
   <span class="ch-num">Cap. ${ch.number}</span>
-  <span class="ch-title-text">${ch.title}</span>
+  <span class="ch-title-text">${escapeHtml(ch.title)}</span>
   <div class="ch-tags">${tags}</div>
-  <button class="btn btn-ghost btn-sm" onclick="editChapter(${ch.number-1})">✏️ Modifica</button>
+  <button class="btn btn-ghost btn-sm btn-edit-toggle" data-idx="${idx}">✏️ Modifica</button>
 </div>
 <div class="ch-body">
-  <div class="ch-text-col" id="ch-text-${ch.number-1}">${ch.text}</div>
+  <div class="ch-text-col" id="ch-col-${idx}">
+    <div class="ch-text-view" id="ch-text-${idx}">${escapeHtml(ch.text)}</div>
+    <textarea class="ch-text-edit" id="ch-textarea-${idx}">${escapeHtml(ch.text)}</textarea>
+    <div class="ch-edit-actions">
+      <button class="btn btn-accent btn-sm btn-save-edit" data-idx="${idx}">✓ Salva</button>
+      <button class="btn btn-ghost btn-sm btn-cancel-edit" data-idx="${idx}">Annulla</button>
+    </div>
+  </div>
   <div class="ch-img-col">
     <div class="btn-group">
-      <button class="btn btn-cyan btn-sm" onclick="genPrompt(${ch.number-1})">📝 Prompt</button>
-      <button class="btn btn-green btn-sm" onclick="genImg(${ch.number-1})">🎨 Immagine</button>
+      <button class="btn btn-cyan btn-sm btn-gen-prompt" data-idx="${idx}">📝 Prompt immagine</button>
     </div>
-    <div class="img-preview" id="img-${ch.number-1}">Nessuna immagine</div>
-    <div class="prompt-box" id="prompt-${ch.number-1}"></div>
+    <div class="prompt-box" id="prompt-${idx}">
+      <div class="prompt-text" id="prompt-text-${idx}"></div>
+      <div class="prompt-copy-hint">✅ Prompt copiato negli appunti — incollalo su <strong>Gemini</strong> o <strong>ChatGPT</strong></div>
+    </div>
+    <div class="img-preview" id="img-${idx}">Nessuna immagine</div>
   </div>
 </div>`;
     list.appendChild(card);
   });
+
+  // ── Event delegation per tutti i bottoni dei capitoli ──
+  list.addEventListener('click', e => {
+    // bottone Modifica
+    const editBtn = e.target.closest('.btn-edit-toggle');
+    if(editBtn){
+      const idx = parseInt(editBtn.dataset.idx);
+      startEdit(idx);
+      return;
+    }
+    // bottone Salva modifica
+    const saveBtn = e.target.closest('.btn-save-edit');
+    if(saveBtn){
+      const idx = parseInt(saveBtn.dataset.idx);
+      saveEdit(idx);
+      return;
+    }
+    // bottone Annulla modifica
+    const cancelBtn = e.target.closest('.btn-cancel-edit');
+    if(cancelBtn){
+      const idx = parseInt(cancelBtn.dataset.idx);
+      cancelEdit(idx);
+      return;
+    }
+    // bottone Prompt immagine
+    const promptBtn = e.target.closest('.btn-gen-prompt');
+    if(promptBtn){
+      const idx = parseInt(promptBtn.dataset.idx);
+      genPrompt(idx);
+      return;
+    }
+  }, {once: false});
 }
 
-async function genImg(idx){
-  const ch=S.chapters[idx];
-  const el=document.getElementById(`img-${idx}`);
-  el.innerHTML='<div class="loading">Generazione immagine…</div>';
-  const prompt=`Children book illustration: ${ch.text.slice(0,200)}. Characters: ${(ch.characters||[]).join(', ')}. Soft colors, whimsical style.`;
-  try{
-    if(!S.googleApiKey) throw new Error('API key non configurata');
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${S.googleApiKey}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
-    if(!res.ok) throw new Error('API error: '+res.statusText);
-    const data=await res.json();
-    const part=data.candidates?.[0]?.content?.parts?.[0];
-    if(part?.inlineData?.data){
-      el.innerHTML=`<img src="data:${part.inlineData.mimeType||'image/png'};base64,${part.inlineData.data}">`;
-    }else throw new Error('Nessuna immagine nella risposta');
-  }catch(e){
-    el.innerHTML=`<div style="color:var(--orange);font-size:12px">Fallback Pollinations…</div>`;
-    const url=`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${Math.floor(Math.random()*99999)}&nologo=true`;
-    const img=new Image();
-    img.src=url;
-    img.onload=()=>el.innerHTML=`<img src="${url}">`;
-  }
+// Helper anti-XSS
+function escapeHtml(str){
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
 }
 
-function editChapter(idx){
-  const ch=S.chapters[idx];
-  const newText=prompt('Modifica il testo del capitolo:',ch.text);
-  if(newText!==null){
-    ch.text=newText;
-    document.getElementById(`ch-text-${idx}`).textContent=newText;
-    setStatus('status-story','Capitolo modificato ✓','ok');
-  }
+// ── Inline editing ──
+function startEdit(idx){
+  const col = document.getElementById(`ch-col-${idx}`);
+  const ta = document.getElementById(`ch-textarea-${idx}`);
+  col.classList.add('editing');
+  // auto-resize textarea al contenuto
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+  ta.focus();
 }
 
+function saveEdit(idx){
+  const col = document.getElementById(`ch-col-${idx}`);
+  const ta = document.getElementById(`ch-textarea-${idx}`);
+  const view = document.getElementById(`ch-text-${idx}`);
+  const newText = ta.value;
+  S.chapters[idx].text = newText;
+  view.textContent = newText;
+  col.classList.remove('editing');
+  setStatus('status-story','Capitolo modificato ✓','ok');
+}
+
+function cancelEdit(idx){
+  const col = document.getElementById(`ch-col-${idx}`);
+  const ta = document.getElementById(`ch-textarea-${idx}`);
+  // ripristina il testo originale nel textarea
+  ta.value = S.chapters[idx].text;
+  col.classList.remove('editing');
+}
+
+// ── Genera prompt immagine ──
 function genPrompt(idx){
-  const ch=S.chapters[idx];
-  const charRefs=(ch.characters||[]).map(c=>{
-    const role=c.toLowerCase().includes('papà')?'il papà':c.toLowerCase().includes('mamm')?'la mamma':c;
-    return `${c}.jpg (${role})`;
+  const ch = S.chapters[idx];
+  const charRefs = (ch.characters||[]).map(c => {
+    const role = c.toLowerCase().includes('papà') ? 'il papà'
+               : c.toLowerCase().includes('mamm') ? 'la mamma' : c;
+    return `${c} (${role})`;
   }).join(', ');
-  const prevRef=idx>0?` (coerente con immagine precedente Cap.${idx})`:'';
-  const p=`Crea un'immagine per il mio storybook. Scena:\n${ch.text.slice(0,400)}\n\nPersonaggi allegati: ${charRefs}. Mantieni coerenza stilistica${prevRef}.\nNon inserire testi.`;
-  const box=document.getElementById(`prompt-${idx}`);
-  box.style.display='block';
-  box.textContent=p;
-  navigator.clipboard.writeText(p);
-  setStatus('status-story','Prompt copiato ✓','ok');
+  const prevRef = idx > 0 ? ` Mantieni coerenza stilistica con le illustrazioni precedenti.` : '';
+  const p =
+`Crea un'illustrazione per un libro illustrato per bambini.
+
+Scena del capitolo ${ch.number}: "${ch.title}"
+${ch.text.slice(0, 400)}
+
+Personaggi: ${charRefs || 'come descritti nel testo'}.
+Stile: colori pastello morbidi, tratto morbido, atmosfera magica e fiabesca, adatto a bambini 4-8 anni.${prevRef}
+NON inserire testi o scritte nell'immagine.`;
+
+  const box = document.getElementById(`prompt-${idx}`);
+  const textEl = document.getElementById(`prompt-text-${idx}`);
+  textEl.textContent = p;
+  box.classList.add('visible');
+  navigator.clipboard.writeText(p).catch(()=>{});
+  setStatus('status-story','Prompt copiato ✓ — incollalo su Gemini o ChatGPT','ok');
 }
 
-window.addEventListener('load',async()=>{
-  const saved={
-    apiKey:localStorage.getItem('storybook_apikey')||'',
-    ghToken:localStorage.getItem('storybook_gh_token')||'',
-    ghOwner:localStorage.getItem('storybook_gh_owner')||'',
-    ghRepo:localStorage.getItem('storybook_gh_repo')||''
+// ── Load on start ──
+window.addEventListener('load', async () => {
+  const saved = {
+    apiKey: localStorage.getItem('storybook_apikey')||'',
+    ghToken: localStorage.getItem('storybook_gh_token')||'',
+    ghOwner: localStorage.getItem('storybook_gh_owner')||'',
+    ghRepo:  localStorage.getItem('storybook_gh_repo')||''
   };
-  if(saved.apiKey) document.getElementById('inp-apikey').value=saved.apiKey;
-  if(saved.ghToken) document.getElementById('inp-gh-token').value=saved.ghToken;
-  if(saved.ghOwner) document.getElementById('inp-gh-owner').value=saved.ghOwner;
-  if(saved.ghRepo) document.getElementById('inp-gh-repo').value=saved.ghRepo;
-  const repoOwner='Zizzo91',repoName='Storybook';
-  const paths=[`settings/config.json`,`https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/settings/config.json`];
+  if(saved.apiKey)  document.getElementById('inp-apikey').value  = saved.apiKey;
+  if(saved.ghToken) document.getElementById('inp-gh-token').value = saved.ghToken;
+  if(saved.ghOwner) document.getElementById('inp-gh-owner').value = saved.ghOwner;
+  if(saved.ghRepo)  document.getElementById('inp-gh-repo').value  = saved.ghRepo;
+
+  const repoOwner='Zizzo91', repoName='Storybook';
+  const paths = [
+    `settings/config.json`,
+    `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/settings/config.json`
+  ];
   for(const p of paths){
     try{
-      const res=await fetch(p);
+      const res = await fetch(p);
       if(res.ok){
-        const d=await res.json();
-        if(d.groq&&!saved.apiKey) document.getElementById('inp-apikey').value=d.groq;
-        if(d.githubToken&&!saved.ghToken) document.getElementById('inp-gh-token').value=d.githubToken;
-        if(d.githubOwner&&!saved.ghOwner) document.getElementById('inp-gh-owner').value=d.githubOwner;
-        if(d.githubRepo&&!saved.ghRepo) document.getElementById('inp-gh-repo').value=d.githubRepo;
+        const d = await res.json();
+        if(d.groq        && !saved.apiKey)  document.getElementById('inp-apikey').value  = d.groq;
+        if(d.githubToken && !saved.ghToken) document.getElementById('inp-gh-token').value = d.githubToken;
+        if(d.githubOwner && !saved.ghOwner) document.getElementById('inp-gh-owner').value = d.githubOwner;
+        if(d.githubRepo  && !saved.ghRepo)  document.getElementById('inp-gh-repo').value  = d.githubRepo;
         setStatus('status-settings','Configurazione caricata ✓','ok');
         break;
       }
     }catch{}
   }
-  const settings=localStorage.getItem('storybook_settings');
+  const settings = localStorage.getItem('storybook_settings');
   if(settings){
-    try{const s=JSON.parse(settings);if(s.textModel) document.getElementById('inp-textmodel').value=s.textModel;}catch{}
+    try{
+      const s = JSON.parse(settings);
+      if(s.textModel) document.getElementById('inp-textmodel').value = s.textModel;
+    }catch{}
   }
 });
 
-document.getElementById('inp-textmodel').addEventListener('change',()=>{
-  localStorage.setItem('storybook_settings',JSON.stringify({textModel:document.getElementById('inp-textmodel').value}));
-  document.getElementById('pill-text-model').textContent=document.getElementById('inp-textmodel').value.split('-').slice(0,2).join('-');
+document.getElementById('inp-textmodel').addEventListener('change', () => {
+  localStorage.setItem('storybook_settings', JSON.stringify({textModel: document.getElementById('inp-textmodel').value}));
+  document.getElementById('pill-text-model').textContent = document.getElementById('inp-textmodel').value.split('-').slice(0,2).join('-');
 });
 </script>
 </body>
