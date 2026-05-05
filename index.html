@@ -6,591 +6,791 @@
 <title>AI Storybook Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root,[data-theme="dark"]{
- --bg:#0d1117;
- --surface:#161b22;
- --surface2:#1c2230;
- --surface3:#21293a;
- --border:rgba(255,255,255,0.08);
- --text:#e6edf3;
- --muted:#7d8590;
- --faint:#3d444d;
- --accent:#58a6ff;
- --green:#3fb950;
- --cyan:#39c5cf;
- --red:#f85149;
- --orange:#d29922;
- --shadow:0 8px 24px rgba(0,0,0,0.4);
- --radius:12px;
- --font-body:'Inter',sans-serif;
- --font-display:'Nunito',sans-serif;
+:root{
+  --bg:#080c14;
+  --surface:#0f1623;
+  --surface2:#141d2e;
+  --surface3:#1a2540;
+  --glass:rgba(255,255,255,0.04);
+  --glass-border:rgba(255,255,255,0.09);
+  --border:rgba(255,255,255,0.07);
+  --text:#e2eaf6;
+  --text-soft:#9badc7;
+  --muted:#5a6a82;
+  --faint:#253048;
+  --accent:#4f8ef7;
+  --accent2:#7c5cf7;
+  --green:#2dcc6f;
+  --cyan:#22c9d9;
+  --red:#e8564e;
+  --orange:#e09c25;
+  --glow-accent:rgba(79,142,247,0.18);
+  --glow-green:rgba(45,204,111,0.18);
+  --shadow:0 8px 32px rgba(0,0,0,0.55);
+  --shadow-sm:0 4px 14px rgba(0,0,0,0.35);
+  --radius:14px;
+  --radius-sm:9px;
+  --font-body:'Inter',sans-serif;
+  --font-display:'Nunito',sans-serif;
+  --sidebar-w:300px;
+  --header-h:68px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
-h1,h2,h3{font-family:var(--font-display)}
-.container{max-width:1280px;margin:0 auto;padding:24px 20px 80px}
-.header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px 24px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}
-.header-title{display:flex;align-items:center;gap:12px}
-.header-title h1{font-size:22px;font-weight:800;background:linear-gradient(135deg,#58a6ff,#39c5cf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.header-pills{display:flex;gap:8px;flex-wrap:wrap}
-.pill{padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid var(--border);font-size:12px;color:var(--muted)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
-.card-title{font-size:16px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
-.card-sub{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5}
-.mb20{margin-bottom:20px}
-.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
-.field label{font-size:13px;font-weight:600;color:#8b949e}
-.field input,.field textarea,.field select{background:var(--surface2);color:var(--text);border:1px solid var(--faint);border-radius:8px;padding:9px 12px;font-size:14px;font-family:var(--font-body);outline:none;transition:border-color .15s}
-.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
-.field textarea{min-height:90px;resize:vertical}
-.btn{border:none;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:opacity .15s,transform .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.btn:hover:not(:disabled){opacity:.85;transform:translateY(-1px)}
-.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
-.btn-accent{background:var(--accent);color:#0d1117}
-.btn-green{background:var(--green);color:#0d1117}
-.btn-cyan{background:var(--cyan);color:#0d1117}
-.btn-red{background:var(--red);color:#fff}
-.btn-ghost{background:transparent;border:1px solid var(--faint);color:var(--text)}
-.status{min-height:20px;font-size:13px;color:var(--muted);margin-top:10px}
-.status.ok{color:var(--green)}
-.status.warn{color:var(--orange)}
-.status.err{color:var(--red)}
-.story-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;white-space:pre-wrap;font-size:14px;line-height:1.7;min-height:60px;color:var(--text)}
-.chapter-list{display:flex;flex-direction:column;gap:16px}
-.ch-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
-.ch-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px}
-.ch-head h3{font-size:15px;font-weight:700;font-family:var(--font-display)}
-.ch-summary{font-size:13px;color:var(--muted);margin-top:2px}
-.ch-tags{display:flex;gap:6px;flex-wrap:wrap}
-.ch-tag{padding:3px 10px;border-radius:999px;background:rgba(88,166,255,0.12);border:1px solid rgba(88,166,255,0.25);font-size:12px;color:var(--accent)}
-.ch-body{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-.ch-text{font-size:14px;line-height:1.7;white-space:pre-wrap}
-.img-preview{width:100%;aspect-ratio:1/1;border-radius:10px;background:var(--surface3);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;padding:12px;margin-top:10px}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  font-size:14.5px;
+  line-height:1.6;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 15% 0%, rgba(79,142,247,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 100%, rgba(124,92,247,0.07) 0%, transparent 60%);
+}
+h1,h2,h3,h4{font-family:var(--font-display)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--faint);border-radius:99px}
+
+/* ── LAYOUT ── */
+.app-header{
+  position:sticky;top:0;z-index:100;
+  height:var(--header-h);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;
+  background:rgba(8,12,20,0.85);
+  backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--glass-border);
+  box-shadow:0 1px 0 rgba(255,255,255,0.04);
+}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{
+  width:38px;height:38px;border-radius:10px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;box-shadow:0 0 18px var(--glow-accent);
+}
+.logo h1{
+  font-size:20px;font-weight:900;
+  background:linear-gradient(130deg,#a8c8ff,#c4b1ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:-0.3px;
+}
+.header-pills{display:flex;gap:6px;align-items:center}
+.pill{
+  padding:4px 11px;border-radius:999px;
+  background:var(--glass);border:1px solid var(--glass-border);
+  font-size:11.5px;color:var(--text-soft);
+  letter-spacing:0.2px;
+}
+.pill.accent{background:rgba(79,142,247,0.12);border-color:rgba(79,142,247,0.3);color:var(--accent)}
+
+.app-body{
+  display:flex;
+  min-height:calc(100vh - var(--header-h));
+}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
+  border-right:1px solid var(--glass-border);
+  padding:24px 20px 40px;
+  display:flex;flex-direction:column;gap:20px;
+  overflow-y:auto;
+  background:rgba(15,22,35,0.7);
+  backdrop-filter:blur(6px);
+}
+.sidebar-section{display:flex;flex-direction:column;gap:10px}
+.sidebar-label{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  color:var(--muted);padding:0 2px;margin-bottom:2px;
+}
+.divider{height:1px;background:var(--glass-border);margin:4px 0}
+
+/* ── MAIN ── */
+.main{
+  flex:1;
+  padding:28px 28px 60px;
+  display:flex;flex-direction:column;gap:22px;
+  overflow-x:hidden;
+}
+
+/* ── CARD ── */
+.card{
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius);
+  padding:22px 24px;
+  box-shadow:var(--shadow-sm);
+  backdrop-filter:blur(8px);
+  position:relative;
+}
+.card-header{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:16px;
+}
+.card-icon{
+  width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+.card-icon.blue{background:rgba(79,142,247,0.15)}
+.card-icon.purple{background:rgba(124,92,247,0.15)}
+.card-icon.green{background:rgba(45,204,111,0.15)}
+.card-icon.cyan{background:rgba(34,201,217,0.15)}
+.card-title{font-size:15px;font-weight:700;font-family:var(--font-display)}
+.card-sub{font-size:12.5px;color:var(--text-soft);margin-top:1px}
+
+/* ── FORM ── */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.field:last-child{margin-bottom:0}
+.field label{font-size:12px;font-weight:600;color:var(--text-soft);letter-spacing:0.3px}
+.field input,.field textarea,.field select{
+  background:var(--surface2);
+  color:var(--text);
+  border:1px solid var(--faint);
+  border-radius:var(--radius-sm);
+  padding:9px 12px;
+  font-size:13.5px;
+  font-family:var(--font-body);
+  outline:none;
+  transition:border-color .18s,box-shadow .18s;
+  width:100%;
+}
+.field input:focus,.field textarea:focus,.field select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--glow-accent);
+}
+.field textarea{min-height:88px;resize:vertical;line-height:1.6}
+.field select{cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235a6a82' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:calc(100% - 12px) 50%;
+  padding-right:32px;
+}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── BUTTONS ── */
+.btn{
+  border:none;border-radius:var(--radius-sm);
+  padding:9px 15px;
+  font-size:13px;font-weight:600;
+  font-family:var(--font-body);
+  cursor:pointer;
+  transition:opacity .15s,transform .12s,box-shadow .15s;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  white-space:nowrap;
+  line-height:1;
+}
+.btn:hover:not(:disabled){opacity:.88;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn-accent{background:linear-gradient(135deg,#4f8ef7,#3b75e0);color:#fff;box-shadow:0 2px 10px rgba(79,142,247,0.3)}
+.btn-purple{background:linear-gradient(135deg,#7c5cf7,#6444e0);color:#fff;box-shadow:0 2px 10px rgba(124,92,247,0.3)}
+.btn-green{background:linear-gradient(135deg,#2dcc6f,#22b05e);color:#0a1a0e;box-shadow:0 2px 10px var(--glow-green)}
+.btn-cyan{background:linear-gradient(135deg,#22c9d9,#18b0be);color:#071618}
+.btn-red{background:linear-gradient(135deg,#e8564e,#c93f38);color:#fff}
+.btn-ghost{background:transparent;border:1px solid var(--faint);color:var(--text-soft)}
+.btn-ghost:hover:not(:disabled){border-color:var(--accent);color:var(--text);background:var(--glow-accent)}
+.btn-sm{padding:7px 12px;font-size:12px;border-radius:7px}
+.btn-icon{padding:8px;border-radius:7px;width:34px;height:34px}
+
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.btn-group-right{justify-content:flex-end}
+
+/* ── STATUS ── */
+.status{
+  min-height:18px;font-size:12.5px;
+  color:var(--muted);
+  display:flex;align-items:center;gap:6px;
+  margin-top:8px;
+}
+.status::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;display:none}
+.status.ok{color:var(--green)}.status.ok::before{display:inline-block}
+.status.warn{color:var(--orange)}.status.warn::before{display:inline-block}
+.status.err{color:var(--red)}.status.err::before{display:inline-block}
+
+/* ── STORY BOX ── */
+.story-box{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:16px 18px;
+  white-space:pre-wrap;font-size:14px;line-height:1.8;
+  min-height:60px;color:var(--text);
+  font-style:italic;
+}
+
+/* ── CHAPTERS ── */
+.chapter-list{display:flex;flex-direction:column;gap:18px}
+.ch-card{
+  background:var(--surface);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  transition:box-shadow .2s;
+}
+.ch-card:hover{box-shadow:0 0 0 1px rgba(79,142,247,0.18),var(--shadow)}
+.ch-header{
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:10px;
+  padding:14px 18px;
+  border-bottom:1px solid var(--glass-border);
+  background:rgba(255,255,255,0.02);
+}
+.ch-num{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  color:var(--accent);background:rgba(79,142,247,0.1);
+  padding:3px 9px;border-radius:999px;border:1px solid rgba(79,142,247,0.2);
+}
+.ch-title-text{font-size:15px;font-weight:700;font-family:var(--font-display);flex:1;padding:0 12px}
+.ch-tags{display:flex;gap:5px;flex-wrap:wrap}
+.ch-tag{
+  padding:3px 9px;border-radius:999px;
+  background:rgba(124,92,247,0.1);border:1px solid rgba(124,92,247,0.22);
+  font-size:11.5px;color:#b8a5ff;
+}
+.ch-body{
+  display:grid;grid-template-columns:1fr 320px;gap:0;
+}
+.ch-text-col{padding:18px 20px;font-size:13.5px;line-height:1.8;white-space:pre-wrap;border-right:1px solid var(--glass-border)}
+.ch-img-col{
+  padding:16px;display:flex;flex-direction:column;gap:10px;
+  background:rgba(255,255,255,0.01);
+}
+.img-preview{
+  width:100%;aspect-ratio:1/1;
+  border-radius:10px;
+  background:var(--surface3);
+  border:1px solid var(--border);
+  overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted);font-size:12px;text-align:center;padding:12px;
+}
 .img-preview img{width:100%;height:100%;object-fit:cover;display:block}
-.hint{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.5}
-.prompt-box{word-break:break-word;font-family:monospace;font-size:11px;line-height:1.4}
-.empty{color:var(--muted);font-size:14px;padding:16px 0}
+.prompt-box{
+  word-break:break-word;font-family:monospace;font-size:11.5px;line-height:1.5;
+  background:var(--surface3);padding:10px 12px;border-radius:8px;
+  color:var(--text-soft);border:1px solid var(--faint);
+  display:none;
+}
+
+/* ── EMPTY ── */
+.empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 20px;gap:10px;color:var(--muted);
+}
+.empty-icon{font-size:36px;opacity:.5}
+.empty p{font-size:14px}
+
+/* ── ANIMATIONS ── */
 @keyframes shimmer{0%{opacity:.6}50%{opacity:1}100%{opacity:.6}}
 .loading{animation:shimmer 1.4s ease-in-out infinite}
-@media(max-width:900px){.grid2{grid-template-columns:1fr}.ch-body{grid-template-columns:1fr}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.ch-card{animation:fadeIn .25s ease}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .ch-body{grid-template-columns:1fr}
+  .ch-text-col{border-right:none;border-bottom:1px solid var(--glass-border)}
+  .ch-img-col{flex-direction:row;flex-wrap:wrap;align-items:flex-start}
+  .img-preview{width:160px;height:160px;flex-shrink:0}
+}
+@media(max-width:800px){
+  .app-body{flex-direction:column}
+  .sidebar{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--glass-border)}
+  .main{padding:18px 16px 40px}
+}
 </style>
 </head>
 <body>
-<div class="container">
- <div class="header">
-  <div class="header-title">
-   <h1>AI Storybook Studio</h1>
+
+<!-- ── HEADER ── -->
+<header class="app-header">
+  <div class="logo">
+    <div class="logo-icon">📖</div>
+    <h1>AI Storybook Studio</h1>
   </div>
   <div class="header-pills">
-   <span class="pill" id="pill-provider">Groq</span>
-   <span class="pill" id="pill-text-model">llama-3.3-70b</span>
-   <span class="pill">Pollinations.AI</span>
+    <span class="pill accent" id="pill-text-model">llama-3.3-70b</span>
+    <span class="pill" id="pill-provider">Groq</span>
+    <span class="pill">Pollinations.AI</span>
   </div>
- </div>
- <div class="grid2">
-  <div class="card">
-   <div class="card-title">⚙️ Modelli</div>
-   <div class="card-sub">Seleziona i motori AI per la tua storia.</div>
-   
-   <div class="field">
-    <label>Modello testo</label>
-    <select id="inp-textmodel">
-     <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-     <option value="qwen-qwq-32b">qwen-qwq-32b</option>
-     <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
-     <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-</select>
-    </div>
-    
-<div class="field">
-     <label>Groq API Key (per generare storie)</label>
-     <input type="text" id="inp-apikey" placeholder="gsk_...">
-    </div>
-    <div class="field">
-     <label>GitHub Token (ghp_...)</label>
-     <input type="text" id="inp-gh-token" placeholder="ghp_...">
-    </div>
-    <div class="row">
-     <div class="field"><label>Owner</label><input type="text" id="inp-gh-owner" placeholder="Zizzo91"></div>
-     <div class="field"><label>Repo</label><input type="text" id="inp-gh-repo" placeholder="Storybook"></div>
-    </div>
-    <div class="field">
-     <label>Carica storia</label>
-     <select id="inp-story-select">
-      <option value="">-- Seleziona storia --</option>
-     </select>
-     <button class="btn btn-ghost btn-sm" id="btn-list-stories" style="margin-top:4px">📋 Lista storie</button>
-     <button class="btn btn-red btn-sm" id="btn-delete-story" style="margin-top:4px">🗑️ Elimina</button>
-    </div>
-   
-   <div class="row" style="margin-top:10px">
-    <div id="status-settings" class="status"></div>
-   </div>
-  </div>
-  <div class="card">
-   <div class="card-title">💡 Idea storia</div>
-   <div class="card-sub">Compila i campi e genera la narrazione.</div>
-   
-   <div class="field">
-    <label>Titolo / tema principale</label>
-    <input type="text" id="inp-title" placeholder="Es. Il bosco delle stelle">
-   </div>
-   
-   <div class="row">
-    <div class="field"><label>Target</label><input type="text" id="inp-audience" placeholder="bambini 4-7 anni"></div>
-    <div class="field"><label>Tono</label><input type="text" id="inp-tone" placeholder="dolce, magico"></div>
-   </div>
-   
-   <div class="field">
-    <label>Idea base</label>
-    <textarea id="inp-idea" placeholder="Scrivi qui la tua idea originale..."></textarea>
-   </div>
-   
-   <div style="display:flex; gap:10px; margin-top:10px;">
-    <button class="btn btn-ghost" id="btn-refine">✨ Raffina idea</button>
-    <button class="btn btn-accent" id="btn-genstory">📚 Genera 10 capitoli</button>
-<button class="btn btn-cyan" id="btn-github-load">📥 Carica</button>
-    <button class="btn btn-green" id="btn-github-save">📤 Salva</button>
-    <button class="btn btn-ghost" id="btn-save-keys">💾 Salva chiavi</button>
-   </div>
-   <div id="status-story" class="status"></div>
-  </div>
- </div>
+</header>
 
-<div class="card mb20">
-  <div class="card-title">📄 Versione raffinata</div>
-  <div class="story-box" id="short-story-box">Nessun testo raffinato.</div>
- </div>
+<div class="app-body">
 
- <div class="card">
-  <div class="card-title">📖 Capitoli della storia</div>
-  <div class="chapter-list" id="chapter-list">
-   <div class="empty">Nessun capitolo generato.</div>
-  </div>
- </div>
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">⚙️ Configurazione AI</div>
+      <div class="field">
+        <label>Modello testo</label>
+        <select id="inp-textmodel">
+          <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+          <option value="qwen-qwq-32b">qwen-qwq-32b</option>
+          <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
+          <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Groq API Key</label>
+        <input type="password" id="inp-apikey" placeholder="gsk_…">
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">🐙 GitHub</div>
+      <div class="field">
+        <label>Token</label>
+        <input type="password" id="inp-gh-token" placeholder="ghp_…">
+      </div>
+      <div class="row2">
+        <div class="field"><label>Owner</label><input type="text" id="inp-gh-owner" placeholder="Zizzo91"></div>
+        <div class="field"><label>Repo</label><input type="text" id="inp-gh-repo" placeholder="Storybook"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-save-keys" style="width:100%">💾 Salva credenziali</button>
+      <div id="status-settings" class="status"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">📚 Storie salvate</div>
+      <div class="field">
+        <select id="inp-story-select">
+          <option value="">— Seleziona storia —</option>
+        </select>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-ghost btn-sm" id="btn-list-stories" style="flex:1">📋 Lista</button>
+        <button class="btn btn-red btn-sm" id="btn-delete-story">🗑️</button>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+
+    <!-- Idea card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon blue">💡</div>
+        <div>
+          <div class="card-title">Idea storia</div>
+          <div class="card-sub">Compila i campi e genera la narrazione in 10 capitoli.</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Titolo / tema principale</label>
+        <input type="text" id="inp-title" placeholder="Es. Il bosco delle stelle…">
+      </div>
+
+      <div class="row2">
+        <div class="field"><label>Target</label><input type="text" id="inp-audience" placeholder="bambini 4-7 anni"></div>
+        <div class="field"><label>Tono</label><input type="text" id="inp-tone" placeholder="dolce, magico"></div>
+      </div>
+
+      <div class="field">
+        <label>Idea base</label>
+        <textarea id="inp-idea" placeholder="Scrivi qui la tua idea originale…"></textarea>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-ghost" id="btn-refine">✨ Raffina idea</button>
+        <button class="btn btn-accent" id="btn-genstory">📚 Genera 10 capitoli</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost" id="btn-github-load">📥 Carica</button>
+        <button class="btn btn-green" id="btn-github-save">📤 Salva</button>
+      </div>
+      <div id="status-story" class="status"></div>
+    </div>
+
+    <!-- Refined version -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon purple">📄</div>
+        <div>
+          <div class="card-title">Versione raffinata</div>
+          <div class="card-sub">Output dell'elaborazione AI sull'idea base.</div>
+        </div>
+      </div>
+      <div class="story-box" id="short-story-box">Nessun testo raffinato ancora.</div>
+    </div>
+
+    <!-- Chapters -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon cyan">📖</div>
+        <div>
+          <div class="card-title">Capitoli della storia</div>
+          <div class="card-sub">Genera testo e immagini per ogni capitolo.</div>
+        </div>
+      </div>
+      <div class="chapter-list" id="chapter-list">
+        <div class="empty">
+          <div class="empty-icon">🌙</div>
+          <p>Nessun capitolo generato.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
 </div>
 
 <script>
 const S = {
-  apiKey: '', googleApiKey: '',
-  ghToken: '', ghOwner: '', ghRepo: '',
-  textModel: 'llama-3.3-70b-versatile',
-  title: '', audience: '', tone: '', idea: '', shortVersion: '',
-  chapters: []
+  apiKey:'', googleApiKey:'',
+  ghToken:'', ghOwner:'', ghRepo:'',
+  textModel:'llama-3.3-70b-versatile',
+  title:'', audience:'', tone:'', idea:'', shortVersion:'',
+  chapters:[]
 };
 function setStatus(id,msg,type=''){
- const el=document.getElementById(id);
- if(!el) return;
- el.textContent=msg;
- el.className='status'+(type?' '+type:'');
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.textContent=msg;
+  el.className='status'+(type?' '+type:'');
 }
 function stripFences(t){
- return t.trim()
- .replace(/^```json\s*/i,'')
- .replace(/^```\s*/i,'')
- .replace(/\s*```$/,'')
- .trim();
+  return t.trim()
+    .replace(/^```json\s*/i,'')
+    .replace(/^```\s*/i,'')
+    .replace(/\s*```$/,'')
+    .trim();
 }
 function extractJson(raw){
- const cleaned = stripFences(raw);
- try { return JSON.parse(cleaned); } catch {}
- const first = Math.min(
- cleaned.indexOf('{') === -1 ? Infinity : cleaned.indexOf('{'),
- cleaned.indexOf('[') === -1 ? Infinity : cleaned.indexOf('[')
- );
- if(first === Infinity) throw new Error('Nessun JSON trovato.');
- const opener = cleaned[first];
- const closer = opener === '{' ? '}' : ']';
- const last = cleaned.lastIndexOf(closer);
- if(last === -1) throw new Error('JSON incompleto.');
- return JSON.parse(cleaned.slice(first, last + 1));
+  const cleaned=stripFences(raw);
+  try{return JSON.parse(cleaned);}catch{}
+  const first=Math.min(
+    cleaned.indexOf('{')===-1?Infinity:cleaned.indexOf('{'),
+    cleaned.indexOf('[')===-1?Infinity:cleaned.indexOf('[')
+  );
+  if(first===Infinity) throw new Error('Nessun JSON trovato.');
+  const opener=cleaned[first];
+  const closer=opener==='{'?'}':']';
+  const last=cleaned.lastIndexOf(closer);
+  if(last===-1) throw new Error('JSON incompleto.');
+  return JSON.parse(cleaned.slice(first,last+1));
 }
 function readInputs(){
   S.apiKey=document.getElementById('inp-apikey').value.trim();
-  S.googleApiKey=document.getElementById('inp-google-apikey')?.value.trim() || S.apiKey;
-localStorage.setItem('storybook_apikey', S.apiKey);
-  localStorage.setItem('storybook_google_apikey', S.googleApiKey);
+  S.googleApiKey=S.apiKey;
+  localStorage.setItem('storybook_apikey',S.apiKey);
   S.ghToken=document.getElementById('inp-gh-token').value.trim();
   S.ghOwner=document.getElementById('inp-gh-owner').value.trim();
   S.ghRepo=document.getElementById('inp-gh-repo').value.trim();
-  if(S.ghToken) localStorage.setItem('storybook_gh_token', S.ghToken);
-  if(S.ghOwner) localStorage.setItem('storybook_gh_owner', S.ghOwner);
-  if(S.ghRepo) localStorage.setItem('storybook_gh_repo', S.ghRepo);
+  if(S.ghToken) localStorage.setItem('storybook_gh_token',S.ghToken);
+  if(S.ghOwner) localStorage.setItem('storybook_gh_owner',S.ghOwner);
+  if(S.ghRepo) localStorage.setItem('storybook_gh_repo',S.ghRepo);
   S.textModel=document.getElementById('inp-textmodel').value;
   S.title=document.getElementById('inp-title').value.trim();
- S.audience=document.getElementById('inp-audience').value.trim();
- S.tone=document.getElementById('inp-tone').value.trim();
- S.idea=document.getElementById('inp-idea').value.trim();
+  S.audience=document.getElementById('inp-audience').value.trim();
+  S.tone=document.getElementById('inp-tone').value.trim();
+  S.idea=document.getElementById('inp-idea').value.trim();
 }
-async function callGroqText({ prompt, temperature=0.7, maxTokens=3500 }){
- if(!S.apiKey) throw new Error('⚠️ Groq API key non caricata. Verifica .settings/config.json.');
- const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
- method:'POST',
- headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${S.apiKey}` },
- body: JSON.stringify({
- model: S.textModel,
- messages: [{ role:'user', content: prompt }],
- temperature, max_tokens: maxTokens
- })
- });
- const data = await res.json();
- if(!res.ok) throw new Error(data.error?.message || 'Errore Groq');
- return data.choices[0].message.content.trim();
-}
-document.getElementById('btn-github-save').addEventListener('click', async ()=>{
- readInputs();
-if(!S.ghToken || !S.ghOwner || !S.ghRepo){
-  setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');
-  return;
-  }
-  console.log('Saving to:', S.ghOwner, S.ghRepo, 'Token:', S.ghToken?.slice(0,10));
- const btn = document.getElementById('btn-github-save');
- btn.disabled = true;
- setStatus('status-story','Salvataggio su GitHub...','warn');
- try {
- const slug = (S.title || 'storia-senza-titolo').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
- const path = `stories/${slug}.json`;
- const storyData = {
- title: S.title,
- audience: S.audience,
- tone: S.tone,
- idea: S.idea,
- shortVersion: S.shortVersion,
-chapters: S.chapters.map(ch => ({ number: ch.number, title: ch.title, text: ch.text, characters: ch.characters })),
- timestamp: new Date().toISOString()
- };
- const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(storyData, null, 2))));
- 
-const apiUrl = `https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`;
-  let sha = '';
-  const checkRes = await fetch(apiUrl, {
-  headers: { 'Authorization': `token ${S.ghToken}`, 'Accept': 'application/vnd.github.v3+json' }
+async function callGroqText({prompt,temperature=0.7,maxTokens=3500}){
+  if(!S.apiKey) throw new Error('⚠️ Groq API key non caricata.');
+  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${S.apiKey}`},
+    body:JSON.stringify({model:S.textModel,messages:[{role:'user',content:prompt}],temperature,max_tokens:maxTokens})
   });
-  if(checkRes.ok) {
-  const checkData = await checkRes.json();
-  sha = checkData.sha;
-  } else if(checkRes.status === 404) {
-  }
-  setStatus('status-story',`Salvo in ${S.ghOwner}/${S.ghRepo}...`,'warn');
-const saveRes = await fetch(apiUrl, {
-  method: 'PUT',
-  headers: {
-  'Authorization': `token ${S.ghToken}`,
-  'Content-Type': 'application/json',
-  'Accept': 'application/vnd.github.v3+json'
-  },
- body: JSON.stringify({
- message: `Save story: ${S.title}`,
- content: contentBase64,
- sha: sha || undefined
- })
- });
- if(!saveRes.ok) {
- const err = await saveRes.json();
- throw new Error(err.message || 'Errore salvataggio GitHub');
- }
- setStatus('status-story','Storia salvata con successo su GitHub! ✓','ok');
- } catch (e) {
- setStatus('status-story', e.message, 'err');
- } finally {
-btn.disabled = false;
-  }
-});
-document.getElementById('btn-github-load').addEventListener('click', async ()=>{
+  const data=await res.json();
+  if(!res.ok) throw new Error(data.error?.message||'Errore Groq');
+  return data.choices[0].message.content.trim();
+}
+
+// ── GitHub Save ──
+document.getElementById('btn-github-save').addEventListener('click',async()=>{
   readInputs();
-  if(!S.ghToken || !S.ghOwner || !S.ghRepo){
-    setStatus('status-story','GitHub non configurato. Inserisci token, owner e repo.','err');
-    return;
-  }
-  const btn = document.getElementById('btn-github-load');
-  btn.disabled = true;
-  const storyName = document.getElementById('inp-story-select').value || S.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
-  if(!storyName) return setStatus('status-story','Seleziona una storia dalla tendina.','err');
-  const path = `stories/${storyName}.json`;
-  setStatus('status-story','Caricamento...','warn');
-  try {
-    const res = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`, {
-      headers: { 'Authorization': `token ${S.ghToken}` }
-    });
-    if(!res.ok) throw new Error(res.status === 404 ? 'Storia non trovata' : 'Errore: ' + res.status);
-    const data = await res.json();
-    const json = JSON.parse(atob(data.content));
-    S.title = json.title;
-    S.audience = json.audience;
-    S.tone = json.tone;
-    S.idea = json.idea;
-    S.shortVersion = json.shortVersion;
-    S.chapters = json.chapters || [];
-    document.getElementById('inp-title').value = S.title;
-    document.getElementById('inp-audience').value = S.audience || '';
-    document.getElementById('inp-tone').value = S.tone || '';
-    document.getElementById('inp-idea').value = S.idea || '';
-    document.getElementById('short-story-box').textContent = S.shortVersion || 'Nessun testo.';
+  if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');return;}
+  const btn=document.getElementById('btn-github-save');
+  btn.disabled=true;
+  setStatus('status-story','Salvataggio su GitHub…','warn');
+  try{
+    const slug=(S.title||'storia-senza-titolo').toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-');
+    const path=`stories/${slug}.json`;
+    const storyData={title:S.title,audience:S.audience,tone:S.tone,idea:S.idea,shortVersion:S.shortVersion,
+      chapters:S.chapters.map(ch=>({number:ch.number,title:ch.title,text:ch.text,characters:ch.characters})),
+      timestamp:new Date().toISOString()};
+    const contentBase64=btoa(unescape(encodeURIComponent(JSON.stringify(storyData,null,2))));
+    const apiUrl=`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`;
+    let sha='';
+    const checkRes=await fetch(apiUrl,{headers:{'Authorization':`token ${S.ghToken}`,'Accept':'application/vnd.github.v3+json'}});
+    if(checkRes.ok){const d=await checkRes.json();sha=d.sha;}
+    const saveRes=await fetch(apiUrl,{method:'PUT',
+      headers:{'Authorization':`token ${S.ghToken}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+      body:JSON.stringify({message:`Save story: ${S.title}`,content:contentBase64,sha:sha||undefined})});
+    if(!saveRes.ok){const e=await saveRes.json();throw new Error(e.message||'Errore salvataggio');}
+    setStatus('status-story','Storia salvata su GitHub ✓','ok');
+  }catch(e){setStatus('status-story',e.message,'err');}
+  finally{btn.disabled=false;}
+});
+
+// ── GitHub Load ──
+document.getElementById('btn-github-load').addEventListener('click',async()=>{
+  readInputs();
+  if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','GitHub non configurato.','err');return;}
+  const btn=document.getElementById('btn-github-load');
+  btn.disabled=true;
+  const storyName=document.getElementById('inp-story-select').value||S.title.toLowerCase().replace(/[^a-z0-9]/g,'-');
+  if(!storyName){setStatus('status-story','Seleziona una storia.','err');btn.disabled=false;return;}
+  setStatus('status-story','Caricamento…','warn');
+  try{
+    const res=await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/stories/${storyName}.json`,{headers:{'Authorization':`token ${S.ghToken}`}});
+    if(!res.ok) throw new Error(res.status===404?'Storia non trovata':'Errore: '+res.status);
+    const data=await res.json();
+    const json=JSON.parse(atob(data.content));
+    S.title=json.title;S.audience=json.audience;S.tone=json.tone;S.idea=json.idea;
+    S.shortVersion=json.shortVersion;S.chapters=json.chapters||[];
+    document.getElementById('inp-title').value=S.title;
+    document.getElementById('inp-audience').value=S.audience||'';
+    document.getElementById('inp-tone').value=S.tone||'';
+    document.getElementById('inp-idea').value=S.idea||'';
+    document.getElementById('short-story-box').textContent=S.shortVersion||'Nessun testo.';
     renderChapters();
-    setStatus('status-story','Storia caricata! ✓','ok');
-  } catch(e) {
-    setStatus('status-story', e.message, 'err');
-  } finally {
-    btn.disabled = false;
-  }
+    setStatus('status-story','Storia caricata ✓','ok');
+  }catch(e){setStatus('status-story',e.message,'err');}
+  finally{btn.disabled=false;}
 });
-document.getElementById('btn-list-stories').addEventListener('click', async ()=>{
+
+// ── Lista storie ──
+document.getElementById('btn-list-stories').addEventListener('click',async()=>{
   readInputs();
-  if(!S.ghToken || !S.ghOwner || !S.ghRepo){
-    setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');
-    return;
-  }
-  const btn = document.getElementById('btn-list-stories');
-  btn.disabled = true;
-  setStatus('status-story','Carico lista storie...','warn');
-  try {
-    const res = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/stories`, {
-      headers: { 'Authorization': `token ${S.ghToken}`, 'Accept': 'application/vnd.github.v3+json' }
-    });
-    console.log('List response:', res.status, S.ghToken?.slice(0,10));
-    if(res.status === 401 || res.status === 403) throw new Error('Token non valido o senza permessi. Verifica il token GitHub.');
-    if(!res.ok) throw new Error(res.status === 404 ? 'Nessuna storia salvata' : 'Errore: ' + res.status);
-    const files = await res.json();
-    const select = document.getElementById('inp-story-select');
-    select.innerHTML = '<option value="">-- Seleziona storia --</option>';
-    files.forEach(f => {
-      if(f.name.endsWith('.json')) {
-        const opt = document.createElement('option');
-        opt.value = f.name.replace('.json','');
-        opt.textContent = f.name.replace('.json','');
+  if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');return;}
+  const btn=document.getElementById('btn-list-stories');
+  btn.disabled=true;
+  setStatus('status-story','Carico lista…','warn');
+  try{
+    const res=await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/stories`,{headers:{'Authorization':`token ${S.ghToken}`,'Accept':'application/vnd.github.v3+json'}});
+    if(res.status===401||res.status===403) throw new Error('Token non valido o senza permessi.');
+    if(!res.ok) throw new Error(res.status===404?'Nessuna storia salvata':'Errore: '+res.status);
+    const files=await res.json();
+    const select=document.getElementById('inp-story-select');
+    select.innerHTML='<option value="">— Seleziona storia —</option>';
+    files.forEach(f=>{
+      if(f.name.endsWith('.json')){
+        const opt=document.createElement('option');
+        opt.value=f.name.replace('.json','');
+        opt.textContent=f.name.replace('.json','');
         select.appendChild(opt);
       }
     });
-    setStatus('status-story',`Trovate ${files.length} storie!_seleziona dalla tendina.`);
-  } catch(e) {
-    setStatus('status-story', e.message, 'err');
-  } finally {
-    btn.disabled = false;
-  }
+    setStatus('status-story',`${files.length} storie trovate.`,'ok');
+  }catch(e){setStatus('status-story',e.message,'err');}
+  finally{btn.disabled=false;}
 });
-document.getElementById('inp-story-select').addEventListener('change', () => {
-  const storyName = document.getElementById('inp-story-select').value;
-  if(storyName) {
-    document.getElementById('btn-github-load').click();
-  }
+
+document.getElementById('inp-story-select').addEventListener('change',()=>{
+  if(document.getElementById('inp-story-select').value) document.getElementById('btn-github-load').click();
 });
-document.getElementById('btn-delete-story').addEventListener('click', async ()=>{
+
+// ── Elimina storia ──
+document.getElementById('btn-delete-story').addEventListener('click',async()=>{
   readInputs();
-  if(!S.ghToken || !S.ghOwner || !S.ghRepo){
-    setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');
-    return;
-  }
-  const storyName = document.getElementById('inp-story-select').value;
+  if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','GitHub non configurato.','err');return;}
+  const storyName=document.getElementById('inp-story-select').value;
   if(!storyName) return setStatus('status-story','Seleziona una storia da eliminare.','err');
-  if(!confirm('Eliminare la storia "' + storyName + '"?')) return;
-  const path = `stories/${storyName}.json`;
-  setStatus('status-story','Eliminazione...','warn');
-  try {
-    const getRes = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`, {
-      headers: { 'Authorization': `token ${S.ghToken}`, 'Accept': 'application/vnd.github.v3+json' }
-    });
+  if(!confirm('Eliminare "'+storyName+'"?')) return;
+  setStatus('status-story','Eliminazione…','warn');
+  try{
+    const getRes=await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/stories/${storyName}.json`,{headers:{'Authorization':`token ${S.ghToken}`,'Accept':'application/vnd.github.v3+json'}});
     if(!getRes.ok) throw new Error('Storia non trovata');
-    const fileData = await getRes.json();
-    const delRes = await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`, {
-      method: 'DELETE',
-      headers: { 
-        'Authorization': `token ${S.ghToken}`, 
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.github.v3+json'
-      },
-      body: JSON.stringify({
-        message: `Delete story: ${storyName}`,
-        sha: fileData.sha
-      })
-    });
+    const fileData=await getRes.json();
+    const delRes=await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/stories/${storyName}.json`,{
+      method:'DELETE',
+      headers:{'Authorization':`token ${S.ghToken}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+      body:JSON.stringify({message:`Delete story: ${storyName}`,sha:fileData.sha})});
     if(!delRes.ok) throw new Error('Errore eliminazione');
-    setStatus('status-story','Storia eliminata! ✓','ok');
+    setStatus('status-story','Storia eliminata ✓','ok');
     document.getElementById('btn-list-stories').click();
-  } catch(e) {
-    setStatus('status-story', e.message, 'err');
-  }
+  }catch(e){setStatus('status-story',e.message,'err');}
 });
-window.addEventListener('load', async () => {
-  const repoOwner = 'Zizzo91';
-  const repoName = 'Storybook';
-  const paths = [
-    `settings/config.json`,
-    `config.json`,
-    `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/settings/config.json`,
-    `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/config.json`
-  ];
-  let d = null;
-  for(const p of paths) {
-    try {
-      const res = await fetch(p);
-      if(res.ok) { d = await res.json(); break; }
-    } catch{}
-  }
-  if(d) {
-    if (d.groq && !localStorage.getItem('storybook_apikey')) document.getElementById('inp-apikey').value = d.groq;
-    if (d.githubToken && !localStorage.getItem('storybook_gh_token')) {
-      document.getElementById('inp-gh-token').value = d.githubToken;
-    }
-    if (d.githubOwner && !localStorage.getItem('storybook_gh_owner')) {
-      document.getElementById('inp-gh-owner').value = d.githubOwner;
-    }
-    if (d.githubRepo && !localStorage.getItem('storybook_gh_repo')) {
-      document.getElementById('inp-gh-repo').value = d.githubRepo;
-    }
-    setStatus('status-settings', 'Configurazione caricata ✓', 'ok');
-  }
-  const savedApiKey = localStorage.getItem('storybook_apikey') || '';
-  const savedGhToken = localStorage.getItem('storybook_gh_token') || '';
-  const savedGhOwner = localStorage.getItem('storybook_gh_owner') || '';
-  const savedGhRepo = localStorage.getItem('storybook_gh_repo') || '';
-  if(savedApiKey) document.getElementById('inp-apikey').value = savedApiKey;
-  if(savedGhToken) document.getElementById('inp-gh-token').value = savedGhToken;
-  if(savedGhOwner) document.getElementById('inp-gh-owner').value = savedGhOwner;
-  if(savedGhRepo) document.getElementById('inp-gh-repo').value = savedGhRepo;
+
+// ── Salva chiavi ──
+document.getElementById('btn-save-keys').addEventListener('click',()=>{
+  const apiKey=document.getElementById('inp-apikey').value.trim();
+  const ghToken=document.getElementById('inp-gh-token').value.trim();
+  const ghOwner=document.getElementById('inp-gh-owner').value.trim();
+  const ghRepo=document.getElementById('inp-gh-repo').value.trim();
+  if(!apiKey&&!ghToken){setStatus('status-settings','Inserisci almeno una chiave.','err');return;}
+  if(apiKey) localStorage.setItem('storybook_apikey',apiKey);
+  if(ghToken) localStorage.setItem('storybook_gh_token',ghToken);
+  if(ghOwner) localStorage.setItem('storybook_gh_owner',ghOwner);
+  if(ghRepo) localStorage.setItem('storybook_gh_repo',ghRepo);
+  setStatus('status-settings','Credenziali salvate ✓','ok');
 });
-document.getElementById('btn-save-keys').addEventListener('click', () => {
-  const apiKey = document.getElementById('inp-apikey').value.trim();
-  const ghToken = document.getElementById('inp-gh-token').value.trim();
-  const ghOwner = document.getElementById('inp-gh-owner').value.trim();
-  const ghRepo = document.getElementById('inp-gh-repo').value.trim();
-  if(!apiKey && !ghToken) {
-    setStatus('status-settings', 'Inserisci almeno una chiave prima.','err');
+
+// ── Raffina idea ──
+document.getElementById('btn-refine').addEventListener('click',async()=>{
+  readInputs();
+  if(!S.idea) return setStatus('status-story','Scrivi un\'idea base.','err');
+  const btn=document.getElementById('btn-refine');
+  btn.disabled=true;
+  setStatus('status-story','Raffinamento in corso…','warn');
+  try{
+    const res=await callGroqText({prompt:`Raffina questa idea per una storia: ${S.idea}. Target: ${S.audience}. Tono: ${S.tone}. Restituisci circa 150 parole in italiano.`});
+    S.shortVersion=res;
+    document.getElementById('short-story-box').textContent=res;
+    setStatus('status-story','Idea raffinata ✓','ok');
+  }catch(e){setStatus('status-story',e.message,'err');}
+  finally{btn.disabled=false;}
+});
+
+// ── Genera capitoli ──
+document.getElementById('btn-genstory').addEventListener('click',async()=>{
+  readInputs();
+  const btn=document.getElementById('btn-genstory');
+  btn.disabled=true;
+  setStatus('status-story','Generazione capitoli 1–5…','warn');
+  try{
+    const p1=`Genera i primi 5 capitoli di una storia basata su: ${S.shortVersion||S.idea}. Restituisci SOLO un array JSON: [{"number":1,"title":"...","text":"...","characters":["..."]}]`;
+    const r1=await callGroqText({prompt:p1});
+    const ch1=extractJson(r1);
+    setStatus('status-story','Generazione capitoli 6–10…','warn');
+    const r2=await callGroqText({prompt:`Continua la storia dopo questi capitoli: ${r1}. Genera i capitoli 6-10. Stesso formato JSON.`});
+    const ch2=extractJson(r2);
+    S.chapters=[...ch1,...ch2];
+    renderChapters();
+    setStatus('status-story','10 capitoli pronti ✓','ok');
+  }catch(e){setStatus('status-story',e.message,'err');}
+  finally{btn.disabled=false;}
+});
+
+// ── Render capitoli ──
+function renderChapters(){
+  const list=document.getElementById('chapter-list');
+  list.innerHTML='';
+  if(!S.chapters.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">🌙</div><p>Nessun capitolo generato.</p></div>';
     return;
   }
-  if(apiKey) localStorage.setItem('storybook_apikey', apiKey);
-  if(ghToken) localStorage.setItem('storybook_gh_token', ghToken);
-  if(ghOwner) localStorage.setItem('storybook_gh_owner', ghOwner);
-  if(ghRepo) localStorage.setItem('storybook_gh_repo', ghRepo);
-  setStatus('status-settings', 'Chiavi salvate! ✓', 'ok');
-});
-document.getElementById('inp-textmodel').addEventListener('change', () => {
-  localStorage.setItem('storybook_settings', JSON.stringify({
-   textModel: document.getElementById('inp-textmodel').value
-  }));
-});
-document.getElementById('btn-refine').addEventListener('click', async ()=>{
- readInputs();
- if(!S.idea) return setStatus('status-story','Scrivi un\'idea base.','err');
- const btn = document.getElementById('btn-refine');
- btn.disabled = true;
- setStatus('status-story','Raffinamento...','warn');
- try {
- const res = await callGroqText({ prompt: `Raffina questa idea per una storia: ${S.idea}. Target: ${S.audience}. Tono: ${S.tone}. Restituisci circa 150 parole in italiano.` });
- S.shortVersion = res;
- document.getElementById('short-story-box').textContent = res;
- setStatus('status-story','Idea raffinata! ✓','ok');
- } catch(e) { setStatus('status-story', e.message, 'err'); }
- finally { btn.disabled = false; }
-});
-document.getElementById('btn-genstory').addEventListener('click', async ()=>{
- readInputs();
- const btn = document.getElementById('btn-genstory');
- btn.disabled = true;
- setStatus('status-story','Generazione capitoli (1-5)...','warn');
- try {
- const prompt = `Genera i primi 5 capitoli di una storia basata su: ${S.shortVersion || S.idea}. Restituisci SOLO un array JSON: [{"number":1,"title":"...","text":"...","characters":["..."]}]`;
- const res1 = await callGroqText({ prompt });
- const chapters1 = extractJson(res1);
- setStatus('status-story','Generazione capitoli (6-10)...','warn');
- const res2 = await callGroqText({ prompt: `Continua la storia dopo questi capitoli: ${res1}. Genera i capitoli 6-10. Stesso formato JSON.` });
- const chapters2 = extractJson(res2);
- S.chapters = [...chapters1, ...chapters2];
- renderChapters();
- setStatus('status-story','10 capitoli pronti! ✓','ok');
- } catch(e) { setStatus('status-story', e.message, 'err'); }
- finally { btn.disabled = false; }
-});
-function renderChapters(){
- const list = document.getElementById('chapter-list');
- list.innerHTML = '';
- S.chapters.forEach(ch => {
- const card = document.createElement('div');
- card.className = 'ch-card';
- card.innerHTML = `
-<div class="ch-head">
-  <h3>Cap. ${ch.number}: ${ch.title}</h3>
+  S.chapters.forEach(ch=>{
+    const card=document.createElement('div');
+    card.className='ch-card';
+    const tags=(ch.characters||[]).map(n=>`<span class="ch-tag">${n}</span>`).join('');
+    card.innerHTML=`
+<div class="ch-header">
+  <span class="ch-num">Cap. ${ch.number}</span>
+  <span class="ch-title-text">${ch.title}</span>
+  <div class="ch-tags">${tags}</div>
   <button class="btn btn-ghost btn-sm" onclick="editChapter(${ch.number-1})">✏️ Modifica</button>
-  <div class="ch-tags">${ch.characters.map(n => `<span class="ch-tag">${n}</span>`).join('')}</div>
-  </div>
+</div>
 <div class="ch-body">
-  <div class="ch-text" id="ch-text-${ch.number-1}">${ch.text}</div>
-  <div class="right">
-  <button class="btn btn-cyan" onclick="genPrompt(${ch.number-1})">📝 Prompt</button>
-  <button class="btn btn-green" onclick="genImg(${ch.number-1})">🎨 Immagine</button>
-  <div class="img-preview" id="img-${ch.number-1}">Nessuna immagine</div>
-  <div class="prompt-box" id="prompt-${ch.number-1}" style="display:none;margin-top:8px;font-size:12px;background:var(--surface3);padding:8px;border-radius:6px;word-break:break-word"></div>
+  <div class="ch-text-col" id="ch-text-${ch.number-1}">${ch.text}</div>
+  <div class="ch-img-col">
+    <div class="btn-group">
+      <button class="btn btn-cyan btn-sm" onclick="genPrompt(${ch.number-1})">📝 Prompt</button>
+      <button class="btn btn-green btn-sm" onclick="genImg(${ch.number-1})">🎨 Immagine</button>
+    </div>
+    <div class="img-preview" id="img-${ch.number-1}">Nessuna immagine</div>
+    <div class="prompt-box" id="prompt-${ch.number-1}"></div>
   </div>
-  </div>
- `;
- list.appendChild(card);
- });
+</div>`;
+    list.appendChild(card);
+  });
 }
+
+// ── Genera immagine ──
 async function genImg(idx){
-  const ch = S.chapters[idx];
-  const el = document.getElementById(`img-${idx}`);
-  el.innerHTML = '<div class="loading">Generazione con Nano Banana...</div>';
-  const prompt = `Children book illustration: ${ch.text.slice(0, 200)}. Characters: ${ch.characters.join(', ')}. Soft colors, whimsical style.`;
-  try {
-    if(!S.googleApiKey) throw new Error('Google API key non configurata');
-    const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${S.googleApiKey}`;
-    const res = await fetch(targetUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
-    });
-    if(!res.ok) throw new Error('API error: ' + res.statusText);
-    const data = await res.json();
-    const part = data.candidates?.[0]?.content?.parts?.[0];
-    if(part?.inlineData?.data) {
-      const b64 = part.inlineData.data;
-      const mime = part.inlineData.mimeType || 'image/png';
-      el.innerHTML = `<img src="data:${mime};base64,${b64}">`;
-    } else {
-      throw new Error('Nessuna immagine nella risposta');
-    }
-  } catch(e) {
-    el.innerHTML = `<div class="err" style="color:var(--red)">Nano Banana errore: ${e.message}. Uso fallback...</div>`;
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${Math.floor(Math.random()*99999)}&nologo=true`;
-    const img = new Image();
-    img.src = url;
-    img.onload = () => el.innerHTML = `<img src="${url}">`;
+  const ch=S.chapters[idx];
+  const el=document.getElementById(`img-${idx}`);
+  el.innerHTML='<div class="loading">Generazione immagine…</div>';
+  const prompt=`Children book illustration: ${ch.text.slice(0,200)}. Characters: ${(ch.characters||[]).join(', ')}. Soft colors, whimsical style.`;
+  try{
+    if(!S.googleApiKey) throw new Error('API key non configurata');
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${S.googleApiKey}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+    if(!res.ok) throw new Error('API error: '+res.statusText);
+    const data=await res.json();
+    const part=data.candidates?.[0]?.content?.parts?.[0];
+    if(part?.inlineData?.data){
+      el.innerHTML=`<img src="data:${part.inlineData.mimeType||'image/png'};base64,${part.inlineData.data}">`;
+    }else throw new Error('Nessuna immagine nella risposta');
+  }catch(e){
+    el.innerHTML=`<div style="color:var(--orange);font-size:12px">Fallback Pollinations…</div>`;
+    const url=`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${Math.floor(Math.random()*99999)}&nologo=true`;
+    const img=new Image();
+    img.src=url;
+    img.onload=()=>el.innerHTML=`<img src="${url}">`;
   }
 }
-function editChapter(idx) {
-  const ch = S.chapters[idx];
-  const newText = prompt('Modifica il testo del capitolo:', ch.text);
-  if(newText !== null) {
-    ch.text = newText;
-    document.getElementById(`ch-text-${idx}`).textContent = newText;
-    setStatus('status-story', 'Capitolo modificato! ✓', 'ok');
+
+function editChapter(idx){
+  const ch=S.chapters[idx];
+  const newText=prompt('Modifica il testo del capitolo:',ch.text);
+  if(newText!==null){
+    ch.text=newText;
+    document.getElementById(`ch-text-${idx}`).textContent=newText;
+    setStatus('status-story','Capitolo modificato ✓','ok');
   }
 }
-function genPrompt(idx) {
-  const ch = S.chapters[idx];
-  const chars = ch.characters || [];
-  const charRefs = chars.map((c, i) => {
-    const role = c.toLowerCase().includes('simone') || c.toLowerCase().includes('papà') ? 'il papà' :
-               c.toLowerCase().includes('michela') || c.toLowerCase().includes('mamm') ? 'la mamma' :
-               c.toLowerCase().includes('gabriele') ? 'Gabriele' : c;
+
+function genPrompt(idx){
+  const ch=S.chapters[idx];
+  const charRefs=(ch.characters||[]).map(c=>{
+    const role=c.toLowerCase().includes('papà')?'il papà':c.toLowerCase().includes('mamm')?'la mamma':c;
     return `${c}.jpg (${role})`;
   }).join(', ');
-  const prevRef = idx > 0 ? ` (coerente con immagine precedente Cap.${idx})` : '';
-  const prompt = `Crea un'immagine per il mio storybook. Il paragrafo per il quale chiedo l'immagine è la seguente scena:
-${ch.text.slice(0, 400)}
-
-In allegato trovi alcuni personaggi (${charRefs}) che possono tornare utili per la scena. Mantieni la coerenza con lo stile dell'immagine precedente${prevRef}.
-Non inserire testi, li inserirò dopo io.`;
-  const box = document.getElementById(`prompt-${idx}`);
-  box.style.display = 'block';
-  box.textContent = prompt;
-  navigator.clipboard.writeText(prompt);
-  setStatus('status-story', 'Prompt copiato!', 'ok');
+  const prevRef=idx>0?` (coerente con immagine precedente Cap.${idx})`:'';
+  const p=`Crea un'immagine per il mio storybook. Scena:\n${ch.text.slice(0,400)}\n\nPersonaggi allegati: ${charRefs}. Mantieni coerenza stilistica${prevRef}.\nNon inserire testi.`;
+  const box=document.getElementById(`prompt-${idx}`);
+  box.style.display='block';
+  box.textContent=p;
+  navigator.clipboard.writeText(p);
+  setStatus('status-story','Prompt copiato ✓','ok');
 }
+
+// ── Load on start ──
+window.addEventListener('load',async()=>{
+  const saved={
+    apiKey:localStorage.getItem('storybook_apikey')||'',
+    ghToken:localStorage.getItem('storybook_gh_token')||'',
+    ghOwner:localStorage.getItem('storybook_gh_owner')||'',
+    ghRepo:localStorage.getItem('storybook_gh_repo')||''
+  };
+  if(saved.apiKey) document.getElementById('inp-apikey').value=saved.apiKey;
+  if(saved.ghToken) document.getElementById('inp-gh-token').value=saved.ghToken;
+  if(saved.ghOwner) document.getElementById('inp-gh-owner').value=saved.ghOwner;
+  if(saved.ghRepo) document.getElementById('inp-gh-repo').value=saved.ghRepo;
+
+  const repoOwner='Zizzo91',repoName='Storybook';
+  const paths=[`settings/config.json`,`https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/settings/config.json`];
+  for(const p of paths){
+    try{
+      const res=await fetch(p);
+      if(res.ok){
+        const d=await res.json();
+        if(d.groq&&!saved.apiKey) document.getElementById('inp-apikey').value=d.groq;
+        if(d.githubToken&&!saved.ghToken) document.getElementById('inp-gh-token').value=d.githubToken;
+        if(d.githubOwner&&!saved.ghOwner) document.getElementById('inp-gh-owner').value=d.githubOwner;
+        if(d.githubRepo&&!saved.ghRepo) document.getElementById('inp-gh-repo').value=d.githubRepo;
+        setStatus('status-settings','Configurazione caricata ✓','ok');
+        break;
+      }
+    }catch{}
+  }
+  const settings=localStorage.getItem('storybook_settings');
+  if(settings){
+    try{const s=JSON.parse(settings);if(s.textModel) document.getElementById('inp-textmodel').value=s.textModel;}catch{}
+  }
+});
+
+document.getElementById('inp-textmodel').addEventListener('change',()=>{
+  localStorage.setItem('storybook_settings',JSON.stringify({textModel:document.getElementById('inp-textmodel').value}));
+  document.getElementById('pill-text-model').textContent=document.getElementById('inp-textmodel').value.split('-').slice(0,2).join('-');
+});
 </script>
 </body>
 </html>
