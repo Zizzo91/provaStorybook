@@ -36,6 +36,7 @@
   --font-display:'Nunito',sans-serif;
   --sidebar-w:300px;
   --header-h:68px;
+  --toggle-w:28px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -51,13 +52,11 @@ body{
     radial-gradient(ellipse 60% 50% at 85% 100%, rgba(124,92,247,0.07) 0%, transparent 60%);
 }
 h1,h2,h3,h4{font-family:var(--font-display)}
-
-/* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--faint);border-radius:99px}
 
-/* ── LAYOUT ── */
+/* ── HEADER ── */
 .app-header{
   position:sticky;top:0;z-index:100;
   height:var(--header-h);
@@ -90,21 +89,40 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 }
 .pill.accent{background:rgba(79,142,247,0.12);border-color:rgba(79,142,247,0.3);color:var(--accent)}
 
+/* ── LAYOUT ── */
 .app-body{
   display:flex;
   min-height:calc(100vh - var(--header-h));
+  position:relative;
 }
 
 /* ── SIDEBAR ── */
+.sidebar-wrapper{
+  position:relative;
+  display:flex;
+  flex-shrink:0;
+  transition:width .28s cubic-bezier(.4,0,.2,1);
+  width:calc(var(--sidebar-w) + var(--toggle-w));
+}
+.sidebar-wrapper.collapsed{
+  width:var(--toggle-w);
+}
 .sidebar{
   width:var(--sidebar-w);
-  min-width:var(--sidebar-w);
   border-right:1px solid var(--glass-border);
   padding:24px 20px 40px;
   display:flex;flex-direction:column;gap:20px;
   overflow-y:auto;
+  overflow-x:hidden;
   background:rgba(15,22,35,0.7);
   backdrop-filter:blur(6px);
+  transition:opacity .22s ease, transform .28s cubic-bezier(.4,0,.2,1);
+  flex-shrink:0;
+}
+.sidebar-wrapper.collapsed .sidebar{
+  opacity:0;
+  pointer-events:none;
+  transform:translateX(-12px);
 }
 .sidebar-section{display:flex;flex-direction:column;gap:10px}
 .sidebar-label{
@@ -113,12 +131,51 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 }
 .divider{height:1px;background:var(--glass-border);margin:4px 0}
 
+/* ── SIDEBAR TOGGLE ── */
+.sidebar-toggle{
+  width:var(--toggle-w);
+  flex-shrink:0;
+  display:flex;
+  align-items:flex-start;
+  padding-top:24px;
+  border-right:1px solid var(--glass-border);
+  background:rgba(15,22,35,0.5);
+}
+.toggle-btn{
+  width:22px;
+  height:40px;
+  border:none;
+  background:transparent;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  margin:0 auto;
+  border-radius:5px;
+  transition:background .15s;
+  outline:none;
+}
+.toggle-btn:hover{
+  background:rgba(79,142,247,0.12);
+}
+/* SVG icon: sidebar panel layout */
+.toggle-btn svg{
+  width:16px;
+  height:16px;
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+}
+.sidebar-wrapper.collapsed .toggle-btn svg{
+  transform:scaleX(-1);
+}
+
 /* ── MAIN ── */
 .main{
   flex:1;
   padding:28px 28px 60px;
   display:flex;flex-direction:column;gap:22px;
   overflow-x:hidden;
+  min-width:0;
 }
 
 /* ── CARD ── */
@@ -198,10 +255,7 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 .btn-ghost{background:transparent;border:1px solid var(--faint);color:var(--text-soft)}
 .btn-ghost:hover:not(:disabled){border-color:var(--accent);color:var(--text);background:var(--glow-accent)}
 .btn-sm{padding:7px 12px;font-size:12px;border-radius:7px}
-.btn-icon{padding:8px;border-radius:7px;width:34px;height:34px}
-
 .btn-group{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
-.btn-group-right{justify-content:flex-end}
 
 /* ── STATUS ── */
 .status{
@@ -233,6 +287,7 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   border-radius:var(--radius);
   overflow:hidden;
   transition:box-shadow .2s;
+  animation:fadeIn .25s ease;
 }
 .ch-card:hover{box-shadow:0 0 0 1px rgba(79,142,247,0.18),var(--shadow)}
 .ch-header{
@@ -291,7 +346,6 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 @keyframes shimmer{0%{opacity:.6}50%{opacity:1}100%{opacity:.6}}
 .loading{animation:shimmer 1.4s ease-in-out infinite}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.ch-card{animation:fadeIn .25s ease}
 
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){
@@ -302,7 +356,11 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 }
 @media(max-width:800px){
   .app-body{flex-direction:column}
-  .sidebar{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--glass-border)}
+  .sidebar-wrapper{width:100%!important;flex-direction:column}
+  .sidebar-wrapper.collapsed{width:100%!important;height:38px}
+  .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--glass-border)}
+  .sidebar-wrapper.collapsed .sidebar{display:none}
+  .sidebar-toggle{width:100%;border-right:none;border-bottom:1px solid var(--glass-border);padding:0;height:38px;justify-content:center;align-items:center}
   .main{padding:18px 16px 40px}
 }
 </style>
@@ -324,58 +382,76 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 
 <div class="app-body">
 
-  <!-- ── SIDEBAR ── -->
-  <aside class="sidebar">
+  <!-- ── SIDEBAR WRAPPER ── -->
+  <div class="sidebar-wrapper" id="sidebar-wrapper">
 
-    <div class="sidebar-section">
-      <div class="sidebar-label">⚙️ Configurazione AI</div>
-      <div class="field">
-        <label>Modello testo</label>
-        <select id="inp-textmodel">
-          <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-          <option value="qwen-qwq-32b">qwen-qwq-32b</option>
-          <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
-          <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-        </select>
+    <!-- Contenuto sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">⚙️ Configurazione AI</div>
+        <div class="field">
+          <label>Modello testo</label>
+          <select id="inp-textmodel">
+            <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+            <option value="qwen-qwq-32b">qwen-qwq-32b</option>
+            <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
+            <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Groq API Key</label>
+          <input type="password" id="inp-apikey" placeholder="gsk_…">
+        </div>
       </div>
-      <div class="field">
-        <label>Groq API Key</label>
-        <input type="password" id="inp-apikey" placeholder="gsk_…">
+
+      <div class="divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">🐙 GitHub</div>
+        <div class="field">
+          <label>Token</label>
+          <input type="password" id="inp-gh-token" placeholder="ghp_…">
+        </div>
+        <div class="row2">
+          <div class="field"><label>Owner</label><input type="text" id="inp-gh-owner" placeholder="Zizzo91"></div>
+          <div class="field"><label>Repo</label><input type="text" id="inp-gh-repo" placeholder="Storybook"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-save-keys" style="width:100%">💾 Salva credenziali</button>
+        <div id="status-settings" class="status"></div>
       </div>
+
+      <div class="divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">📚 Storie salvate</div>
+        <div class="field">
+          <select id="inp-story-select">
+            <option value="">— Seleziona storia —</option>
+          </select>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-ghost btn-sm" id="btn-list-stories" style="flex:1">📋 Lista</button>
+          <button class="btn btn-red btn-sm" id="btn-delete-story">🗑️</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Toggle button -->
+    <div class="sidebar-toggle">
+      <button class="toggle-btn" id="sidebar-toggle-btn" title="Mostra/nascondi pannello">
+        <!-- Icona: rettangolo stretto a sx + rettangolo largo a dx -->
+        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- pannello sinistro (sidebar) -->
+          <rect x="1" y="2" width="4" height="12" rx="1.2"
+            fill="rgba(158,176,210,0.5)" stroke="rgba(158,176,210,0.7)" stroke-width="0"/>
+          <!-- pannello destro (main) -->
+          <rect x="7" y="2" width="8" height="12" rx="1.2"
+            fill="rgba(79,142,247,0.25)" stroke="rgba(79,142,247,0.55)" stroke-width="0.6"/>
+        </svg>
+      </button>
     </div>
 
-    <div class="divider"></div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-label">🐙 GitHub</div>
-      <div class="field">
-        <label>Token</label>
-        <input type="password" id="inp-gh-token" placeholder="ghp_…">
-      </div>
-      <div class="row2">
-        <div class="field"><label>Owner</label><input type="text" id="inp-gh-owner" placeholder="Zizzo91"></div>
-        <div class="field"><label>Repo</label><input type="text" id="inp-gh-repo" placeholder="Storybook"></div>
-      </div>
-      <button class="btn btn-ghost btn-sm" id="btn-save-keys" style="width:100%">💾 Salva credenziali</button>
-      <div id="status-settings" class="status"></div>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-label">📚 Storie salvate</div>
-      <div class="field">
-        <select id="inp-story-select">
-          <option value="">— Seleziona storia —</option>
-        </select>
-      </div>
-      <div class="btn-group">
-        <button class="btn btn-ghost btn-sm" id="btn-list-stories" style="flex:1">📋 Lista</button>
-        <button class="btn btn-red btn-sm" id="btn-delete-story">🗑️</button>
-      </div>
-    </div>
-
-  </aside>
+  </div><!-- /sidebar-wrapper -->
 
   <!-- ── MAIN ── -->
   <main class="main">
@@ -448,6 +524,20 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 </div>
 
 <script>
+// ── Sidebar toggle ──
+(function(){
+  const wrapper = document.getElementById('sidebar-wrapper');
+  const btn = document.getElementById('sidebar-toggle-btn');
+  let collapsed = localStorage.getItem('sidebar_collapsed') === '1';
+  function applyState(){
+    wrapper.classList.toggle('collapsed', collapsed);
+    btn.title = collapsed ? 'Mostra pannello' : 'Nascondi pannello';
+    localStorage.setItem('sidebar_collapsed', collapsed ? '1' : '0');
+  }
+  applyState();
+  btn.addEventListener('click', () => { collapsed = !collapsed; applyState(); });
+})();
+
 const S = {
   apiKey:'', googleApiKey:'',
   ghToken:'', ghOwner:'', ghRepo:'',
