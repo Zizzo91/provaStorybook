@@ -97,18 +97,9 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 }
 
 /* ── SIDEBAR ── */
-.sidebar-wrapper{
-  position:relative;
-  display:flex;
-  flex-shrink:0;
-  transition:width .28s cubic-bezier(.4,0,.2,1);
-  width:calc(var(--sidebar-w) + var(--toggle-w));
-}
-.sidebar-wrapper.collapsed{
-  width:var(--toggle-w);
-}
 .sidebar{
   width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
   border-right:1px solid var(--glass-border);
   padding:24px 20px 40px;
   display:flex;flex-direction:column;gap:20px;
@@ -116,30 +107,44 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   overflow-x:hidden;
   background:rgba(15,22,35,0.7);
   backdrop-filter:blur(6px);
-  transition:opacity .22s ease, transform .28s cubic-bezier(.4,0,.2,1);
-  flex-shrink:0;
+  /* transizione apertura/chiusura */
+  transition: width .28s cubic-bezier(.4,0,.2,1),
+              min-width .28s cubic-bezier(.4,0,.2,1),
+              opacity .22s ease,
+              transform .28s cubic-bezier(.4,0,.2,1);
 }
-.sidebar-wrapper.collapsed .sidebar{
+.sidebar.collapsed{
+  width:0;
+  min-width:0;
   opacity:0;
   pointer-events:none;
-  transform:translateX(-12px);
+  transform:translateX(-10px);
+  padding-left:0;
+  padding-right:0;
+  border-right:none;
+  overflow:hidden;
 }
 .sidebar-section{display:flex;flex-direction:column;gap:10px}
 .sidebar-label{
   font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
   color:var(--muted);padding:0 2px;margin-bottom:2px;
+  white-space:nowrap;
 }
 .divider{height:1px;background:var(--glass-border);margin:4px 0}
 
-/* ── SIDEBAR TOGGLE ── */
-.sidebar-toggle{
+/* ── TOGGLE BUTTON ── */
+/* striscia verticale sempre visibile tra sidebar e main */
+.sidebar-toggle-rail{
   width:var(--toggle-w);
   flex-shrink:0;
   display:flex;
   align-items:flex-start;
-  padding-top:24px;
+  justify-content:center;
+  padding-top:20px;
   border-right:1px solid var(--glass-border);
-  background:rgba(15,22,35,0.5);
+  background:rgba(15,22,35,0.4);
+  position:relative;
+  z-index:10;
 }
 .toggle-btn{
   width:22px;
@@ -151,21 +156,22 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   align-items:center;
   justify-content:center;
   padding:0;
-  margin:0 auto;
   border-radius:5px;
   transition:background .15s;
   outline:none;
+  position:sticky;
+  top:20px;
 }
 .toggle-btn:hover{
-  background:rgba(79,142,247,0.12);
+  background:rgba(79,142,247,0.15);
 }
-/* SVG icon: sidebar panel layout */
 .toggle-btn svg{
   width:16px;
   height:16px;
   transition:transform .28s cubic-bezier(.4,0,.2,1);
 }
-.sidebar-wrapper.collapsed .toggle-btn svg{
+/* quando la sidebar è chiusa, specchia l'icona */
+.sidebar.collapsed ~ .sidebar-toggle-rail .toggle-btn svg{
   transform:scaleX(-1);
 }
 
@@ -356,11 +362,10 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 }
 @media(max-width:800px){
   .app-body{flex-direction:column}
-  .sidebar-wrapper{width:100%!important;flex-direction:column}
-  .sidebar-wrapper.collapsed{width:100%!important;height:38px}
-  .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--glass-border)}
-  .sidebar-wrapper.collapsed .sidebar{display:none}
-  .sidebar-toggle{width:100%;border-right:none;border-bottom:1px solid var(--glass-border);padding:0;height:38px;justify-content:center;align-items:center}
+  .sidebar{min-width:unset;border-right:none;border-bottom:1px solid var(--glass-border)}
+  .sidebar.collapsed{width:0;height:0;padding:0;border:none}
+  .sidebar-toggle-rail{width:100%;height:36px;border-right:none;border-bottom:1px solid var(--glass-border);padding:0;justify-content:flex-start;padding-left:16px;align-items:center}
+  .toggle-btn{position:static;height:28px}
   .main{padding:18px 16px 40px}
 }
 </style>
@@ -382,81 +387,72 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 
 <div class="app-body">
 
-  <!-- ── SIDEBAR WRAPPER ── -->
-  <div class="sidebar-wrapper" id="sidebar-wrapper">
-
-    <!-- Contenuto sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-label">⚙️ Configurazione AI</div>
-        <div class="field">
-          <label>Modello testo</label>
-          <select id="inp-textmodel">
-            <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-            <option value="qwen-qwq-32b">qwen-qwq-32b</option>
-            <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
-            <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Groq API Key</label>
-          <input type="password" id="inp-apikey" placeholder="gsk_…">
-        </div>
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">⚙️ Configurazione AI</div>
+      <div class="field">
+        <label>Modello testo</label>
+        <select id="inp-textmodel">
+          <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+          <option value="qwen-qwq-32b">qwen-qwq-32b</option>
+          <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
+          <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+        </select>
       </div>
-
-      <div class="divider"></div>
-
-      <div class="sidebar-section">
-        <div class="sidebar-label">🐙 GitHub</div>
-        <div class="field">
-          <label>Token</label>
-          <input type="password" id="inp-gh-token" placeholder="ghp_…">
-        </div>
-        <div class="row2">
-          <div class="field"><label>Owner</label><input type="text" id="inp-gh-owner" placeholder="Zizzo91"></div>
-          <div class="field"><label>Repo</label><input type="text" id="inp-gh-repo" placeholder="Storybook"></div>
-        </div>
-        <button class="btn btn-ghost btn-sm" id="btn-save-keys" style="width:100%">💾 Salva credenziali</button>
-        <div id="status-settings" class="status"></div>
+      <div class="field">
+        <label>Groq API Key</label>
+        <input type="password" id="inp-apikey" placeholder="gsk_…">
       </div>
-
-      <div class="divider"></div>
-
-      <div class="sidebar-section">
-        <div class="sidebar-label">📚 Storie salvate</div>
-        <div class="field">
-          <select id="inp-story-select">
-            <option value="">— Seleziona storia —</option>
-          </select>
-        </div>
-        <div class="btn-group">
-          <button class="btn btn-ghost btn-sm" id="btn-list-stories" style="flex:1">📋 Lista</button>
-          <button class="btn btn-red btn-sm" id="btn-delete-story">🗑️</button>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Toggle button -->
-    <div class="sidebar-toggle">
-      <button class="toggle-btn" id="sidebar-toggle-btn" title="Mostra/nascondi pannello">
-        <!-- Icona: rettangolo stretto a sx + rettangolo largo a dx -->
-        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- pannello sinistro (sidebar) -->
-          <rect x="1" y="2" width="4" height="12" rx="1.2"
-            fill="rgba(158,176,210,0.5)" stroke="rgba(158,176,210,0.7)" stroke-width="0"/>
-          <!-- pannello destro (main) -->
-          <rect x="7" y="2" width="8" height="12" rx="1.2"
-            fill="rgba(79,142,247,0.25)" stroke="rgba(79,142,247,0.55)" stroke-width="0.6"/>
-        </svg>
-      </button>
     </div>
 
-  </div><!-- /sidebar-wrapper -->
+    <div class="divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">🐙 GitHub</div>
+      <div class="field">
+        <label>Token</label>
+        <input type="password" id="inp-gh-token" placeholder="ghp_…">
+      </div>
+      <div class="row2">
+        <div class="field"><label>Owner</label><input type="text" id="inp-gh-owner" placeholder="Zizzo91"></div>
+        <div class="field"><label>Repo</label><input type="text" id="inp-gh-repo" placeholder="Storybook"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-save-keys" style="width:100%">💾 Salva credenziali</button>
+      <div id="status-settings" class="status"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">📚 Storie salvate</div>
+      <div class="field">
+        <select id="inp-story-select">
+          <option value="">— Seleziona storia —</option>
+        </select>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-ghost btn-sm" id="btn-list-stories" style="flex:1">📋 Lista</button>
+        <button class="btn btn-red btn-sm" id="btn-delete-story">🗑️</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── TOGGLE RAIL ── -->
+  <!-- Striscia verticale SEMPRE visibile, indipendente dalla sidebar -->
+  <div class="sidebar-toggle-rail">
+    <button class="toggle-btn" id="sidebar-toggle-btn" title="Nascondi pannello">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="2" width="4" height="12" rx="1.2" fill="rgba(158,176,210,0.5)"/>
+        <rect x="7" y="2" width="8" height="12" rx="1.2"
+          fill="rgba(79,142,247,0.22)" stroke="rgba(79,142,247,0.5)" stroke-width="0.7"/>
+      </svg>
+    </button>
+  </div>
 
   <!-- ── MAIN ── -->
   <main class="main">
 
-    <!-- Idea card -->
     <div class="card">
       <div class="card-header">
         <div class="card-icon blue">💡</div>
@@ -465,22 +461,18 @@ h1,h2,h3,h4{font-family:var(--font-display)}
           <div class="card-sub">Compila i campi e genera la narrazione in 10 capitoli.</div>
         </div>
       </div>
-
       <div class="field">
         <label>Titolo / tema principale</label>
         <input type="text" id="inp-title" placeholder="Es. Il bosco delle stelle…">
       </div>
-
       <div class="row2">
         <div class="field"><label>Target</label><input type="text" id="inp-audience" placeholder="bambini 4-7 anni"></div>
         <div class="field"><label>Tono</label><input type="text" id="inp-tone" placeholder="dolce, magico"></div>
       </div>
-
       <div class="field">
         <label>Idea base</label>
         <textarea id="inp-idea" placeholder="Scrivi qui la tua idea originale…"></textarea>
       </div>
-
       <div class="btn-group">
         <button class="btn btn-ghost" id="btn-refine">✨ Raffina idea</button>
         <button class="btn btn-accent" id="btn-genstory">📚 Genera 10 capitoli</button>
@@ -491,7 +483,6 @@ h1,h2,h3,h4{font-family:var(--font-display)}
       <div id="status-story" class="status"></div>
     </div>
 
-    <!-- Refined version -->
     <div class="card">
       <div class="card-header">
         <div class="card-icon purple">📄</div>
@@ -503,7 +494,6 @@ h1,h2,h3,h4{font-family:var(--font-display)}
       <div class="story-box" id="short-story-box">Nessun testo raffinato ancora.</div>
     </div>
 
-    <!-- Chapters -->
     <div class="card">
       <div class="card-header">
         <div class="card-icon cyan">📖</div>
@@ -526,11 +516,11 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 <script>
 // ── Sidebar toggle ──
 (function(){
-  const wrapper = document.getElementById('sidebar-wrapper');
+  const sidebar = document.getElementById('sidebar');
   const btn = document.getElementById('sidebar-toggle-btn');
   let collapsed = localStorage.getItem('sidebar_collapsed') === '1';
   function applyState(){
-    wrapper.classList.toggle('collapsed', collapsed);
+    sidebar.classList.toggle('collapsed', collapsed);
     btn.title = collapsed ? 'Mostra pannello' : 'Nascondi pannello';
     localStorage.setItem('sidebar_collapsed', collapsed ? '1' : '0');
   }
@@ -600,7 +590,6 @@ async function callGroqText({prompt,temperature=0.7,maxTokens=3500}){
   return data.choices[0].message.content.trim();
 }
 
-// ── GitHub Save ──
 document.getElementById('btn-github-save').addEventListener('click',async()=>{
   readInputs();
   if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');return;}
@@ -627,7 +616,6 @@ document.getElementById('btn-github-save').addEventListener('click',async()=>{
   finally{btn.disabled=false;}
 });
 
-// ── GitHub Load ──
 document.getElementById('btn-github-load').addEventListener('click',async()=>{
   readInputs();
   if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','GitHub non configurato.','err');return;}
@@ -654,7 +642,6 @@ document.getElementById('btn-github-load').addEventListener('click',async()=>{
   finally{btn.disabled=false;}
 });
 
-// ── Lista storie ──
 document.getElementById('btn-list-stories').addEventListener('click',async()=>{
   readInputs();
   if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');return;}
@@ -685,7 +672,6 @@ document.getElementById('inp-story-select').addEventListener('change',()=>{
   if(document.getElementById('inp-story-select').value) document.getElementById('btn-github-load').click();
 });
 
-// ── Elimina storia ──
 document.getElementById('btn-delete-story').addEventListener('click',async()=>{
   readInputs();
   if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','GitHub non configurato.','err');return;}
@@ -707,7 +693,6 @@ document.getElementById('btn-delete-story').addEventListener('click',async()=>{
   }catch(e){setStatus('status-story',e.message,'err');}
 });
 
-// ── Salva chiavi ──
 document.getElementById('btn-save-keys').addEventListener('click',()=>{
   const apiKey=document.getElementById('inp-apikey').value.trim();
   const ghToken=document.getElementById('inp-gh-token').value.trim();
@@ -721,7 +706,6 @@ document.getElementById('btn-save-keys').addEventListener('click',()=>{
   setStatus('status-settings','Credenziali salvate ✓','ok');
 });
 
-// ── Raffina idea ──
 document.getElementById('btn-refine').addEventListener('click',async()=>{
   readInputs();
   if(!S.idea) return setStatus('status-story','Scrivi un\'idea base.','err');
@@ -737,7 +721,6 @@ document.getElementById('btn-refine').addEventListener('click',async()=>{
   finally{btn.disabled=false;}
 });
 
-// ── Genera capitoli ──
 document.getElementById('btn-genstory').addEventListener('click',async()=>{
   readInputs();
   const btn=document.getElementById('btn-genstory');
@@ -757,7 +740,6 @@ document.getElementById('btn-genstory').addEventListener('click',async()=>{
   finally{btn.disabled=false;}
 });
 
-// ── Render capitoli ──
 function renderChapters(){
   const list=document.getElementById('chapter-list');
   list.innerHTML='';
@@ -791,7 +773,6 @@ function renderChapters(){
   });
 }
 
-// ── Genera immagine ──
 async function genImg(idx){
   const ch=S.chapters[idx];
   const el=document.getElementById(`img-${idx}`);
@@ -842,7 +823,6 @@ function genPrompt(idx){
   setStatus('status-story','Prompt copiato ✓','ok');
 }
 
-// ── Load on start ──
 window.addEventListener('load',async()=>{
   const saved={
     apiKey:localStorage.getItem('storybook_apikey')||'',
@@ -854,7 +834,6 @@ window.addEventListener('load',async()=>{
   if(saved.ghToken) document.getElementById('inp-gh-token').value=saved.ghToken;
   if(saved.ghOwner) document.getElementById('inp-gh-owner').value=saved.ghOwner;
   if(saved.ghRepo) document.getElementById('inp-gh-repo').value=saved.ghRepo;
-
   const repoOwner='Zizzo91',repoName='Storybook';
   const paths=[`settings/config.json`,`https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/settings/config.json`];
   for(const p of paths){
