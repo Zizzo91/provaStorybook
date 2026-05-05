@@ -314,14 +314,11 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   flex-direction:column;
   gap:10px;
 }
-/* testo leggibile in modalità view */
 .ch-text-view{
   white-space:pre-wrap;
   color:var(--text);
-  cursor:text;
   flex:1;
 }
-/* textarea inline editing */
 .ch-text-edit{
   display:none;
   width:100%;
@@ -339,21 +336,15 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   box-shadow:0 0 0 3px var(--glow-accent);
   flex:1;
 }
-/* barra azioni modifica */
 .ch-edit-actions{
   display:none;
   gap:8px;
   align-items:center;
 }
-/* quando è in editing */
 .ch-text-col.editing .ch-text-view{display:none}
 .ch-text-col.editing .ch-text-edit{display:block}
 .ch-text-col.editing .ch-edit-actions{display:flex}
 .ch-text-col.editing .btn-edit-toggle{display:none}
-/* bottone modifica in header */
-.btn-edit-toggle{
-  /* visibile di default */
-}
 
 .ch-img-col{
   padding:16px;display:flex;flex-direction:column;gap:10px;
@@ -369,8 +360,6 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   color:var(--muted);font-size:12px;text-align:center;padding:12px;
 }
 .img-preview img{width:100%;height:100%;object-fit:cover;display:block}
-
-/* prompt box migliorato */
 .prompt-box{
   word-break:break-word;
   font-family:monospace;font-size:11.5px;line-height:1.5;
@@ -575,239 +564,336 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   btn.addEventListener('click', () => { collapsed = !collapsed; applyState(); });
 })();
 
+// ─────────────────────────────────────────────────────────
+// Stato applicazione
+// ─────────────────────────────────────────────────────────
 const S = {
-  apiKey:'', googleApiKey:'',
-  ghToken:'', ghOwner:'', ghRepo:'',
-  textModel:'llama-3.3-70b-versatile',
-  title:'', audience:'', tone:'', idea:'', shortVersion:'',
-  chapters:[]
+  apiKey: '',
+  ghToken: '', ghOwner: '', ghRepo: '',
+  textModel: 'llama-3.3-70b-versatile',
+  title: '', audience: '', tone: '', idea: '',
+  shortVersion: '',
+  chapters: []
 };
 
-function setStatus(id,msg,type=''){
-  const el=document.getElementById(id);
-  if(!el) return;
-  el.textContent=msg;
-  el.className='status'+(type?' '+type:'');
+// ─────────────────────────────────────────────────────────
+// Listener reattivi: S si aggiorna al cambiamento del campo,
+// non più ri-lettura massiva ad ogni click.
+// ─────────────────────────────────────────────────────────
+function bindInputs() {
+  const bindings = [
+    ['inp-apikey',    v => { S.apiKey = v; localStorage.setItem('storybook_apikey', v); }],
+    ['inp-gh-token',  v => { S.ghToken = v; localStorage.setItem('storybook_gh_token', v); }],
+    ['inp-gh-owner',  v => { S.ghOwner = v; localStorage.setItem('storybook_gh_owner', v); }],
+    ['inp-gh-repo',   v => { S.ghRepo  = v; localStorage.setItem('storybook_gh_repo', v); }],
+    ['inp-title',     v => { S.title    = v; }],
+    ['inp-audience',  v => { S.audience = v; }],
+    ['inp-tone',      v => { S.tone     = v; }],
+    ['inp-idea',      v => { S.idea     = v; }],
+  ];
+  bindings.forEach(([id, setter]) => {
+    const el = document.getElementById(id);
+    el.addEventListener('input',  () => setter(el.value.trim()));
+    el.addEventListener('change', () => setter(el.value.trim()));
+  });
+
+  // textmodel ha solo change
+  const tm = document.getElementById('inp-textmodel');
+  tm.addEventListener('change', () => {
+    S.textModel = tm.value;
+    localStorage.setItem('storybook_settings', JSON.stringify({ textModel: tm.value }));
+    document.getElementById('pill-text-model').textContent = tm.value.split('-').slice(0,2).join('-');
+  });
 }
-function stripFences(t){
+
+// ─────────────────────────────────────────────────────────
+// Encoding robusto Unicode → base64 (sostituisce btoa/unescape/encodeURIComponent)
+// ─────────────────────────────────────────────────────────
+function strToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+function base64ToStr(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+// ─────────────────────────────────────────────────────────
+// Utilities
+// ─────────────────────────────────────────────────────────
+function setStatus(id, msg, type = '') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'status' + (type ? ' ' + type : '');
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function stripFences(t) {
   return t.trim()
-    .replace(/^```json\s*/i,'')
-    .replace(/^```\s*/i,'')
-    .replace(/\s*```$/,'')
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/, '')
     .trim();
 }
-function extractJson(raw){
-  const cleaned=stripFences(raw);
-  try{return JSON.parse(cleaned);}catch{}
-  const first=Math.min(
-    cleaned.indexOf('{')===-1?Infinity:cleaned.indexOf('{'),
-    cleaned.indexOf('[')===-1?Infinity:cleaned.indexOf('[')
+
+function extractJson(raw) {
+  const cleaned = stripFences(raw);
+  try { return JSON.parse(cleaned); } catch {}
+  const first = Math.min(
+    cleaned.indexOf('{') === -1 ? Infinity : cleaned.indexOf('{'),
+    cleaned.indexOf('[') === -1 ? Infinity : cleaned.indexOf('[')
   );
-  if(first===Infinity) throw new Error('Nessun JSON trovato.');
-  const opener=cleaned[first];
-  const closer=opener==='{'?'}':']';
-  const last=cleaned.lastIndexOf(closer);
-  if(last===-1) throw new Error('JSON incompleto.');
-  return JSON.parse(cleaned.slice(first,last+1));
+  if (first === Infinity) throw new Error('Nessun JSON trovato.');
+  const opener = cleaned[first];
+  const closer = opener === '{' ? '}' : ']';
+  const last = cleaned.lastIndexOf(closer);
+  if (last === -1) throw new Error('JSON incompleto.');
+  return JSON.parse(cleaned.slice(first, last + 1));
 }
-function readInputs(){
-  S.apiKey=document.getElementById('inp-apikey').value.trim();
-  S.googleApiKey=S.apiKey;
-  localStorage.setItem('storybook_apikey',S.apiKey);
-  S.ghToken=document.getElementById('inp-gh-token').value.trim();
-  S.ghOwner=document.getElementById('inp-gh-owner').value.trim();
-  S.ghRepo=document.getElementById('inp-gh-repo').value.trim();
-  if(S.ghToken) localStorage.setItem('storybook_gh_token',S.ghToken);
-  if(S.ghOwner) localStorage.setItem('storybook_gh_owner',S.ghOwner);
-  if(S.ghRepo) localStorage.setItem('storybook_gh_repo',S.ghRepo);
-  S.textModel=document.getElementById('inp-textmodel').value;
-  S.title=document.getElementById('inp-title').value.trim();
-  S.audience=document.getElementById('inp-audience').value.trim();
-  S.tone=document.getElementById('inp-tone').value.trim();
-  S.idea=document.getElementById('inp-idea').value.trim();
-}
-async function callGroqText({prompt,temperature=0.7,maxTokens=3500}){
-  if(!S.apiKey) throw new Error('⚠️ Groq API key non caricata.');
-  const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':`Bearer ${S.apiKey}`},
-    body:JSON.stringify({model:S.textModel,messages:[{role:'user',content:prompt}],temperature,max_tokens:maxTokens})
+
+// ─────────────────────────────────────────────────────────
+// API Groq
+// ─────────────────────────────────────────────────────────
+async function callGroqText({ prompt, temperature = 0.7, maxTokens = 3500 }) {
+  if (!S.apiKey) throw new Error('⚠️ Groq API key non caricata.');
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${S.apiKey}` },
+    body: JSON.stringify({
+      model: S.textModel,
+      messages: [{ role: 'user', content: prompt }],
+      temperature,
+      max_tokens: maxTokens
+    })
   });
-  const data=await res.json();
-  if(!res.ok) throw new Error(data.error?.message||'Errore Groq');
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || 'Errore Groq');
   return data.choices[0].message.content.trim();
 }
 
-// ── GitHub Save ──
-document.getElementById('btn-github-save').addEventListener('click',async()=>{
-  readInputs();
-  if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');return;}
-  const btn=document.getElementById('btn-github-save');
-  btn.disabled=true;
-  setStatus('status-story','Salvataggio su GitHub…','warn');
-  try{
-    const slug=(S.title||'storia-senza-titolo').toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-');
-    const path=`stories/${slug}.json`;
-    const storyData={title:S.title,audience:S.audience,tone:S.tone,idea:S.idea,shortVersion:S.shortVersion,
-      chapters:S.chapters.map(ch=>({number:ch.number,title:ch.title,text:ch.text,characters:ch.characters})),
-      timestamp:new Date().toISOString()};
-    const contentBase64=btoa(unescape(encodeURIComponent(JSON.stringify(storyData,null,2))));
-    const apiUrl=`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/${path}`;
-    let sha='';
-    const checkRes=await fetch(apiUrl,{headers:{'Authorization':`token ${S.ghToken}`,'Accept':'application/vnd.github.v3+json'}});
-    if(checkRes.ok){const d=await checkRes.json();sha=d.sha;}
-    const saveRes=await fetch(apiUrl,{method:'PUT',
-      headers:{'Authorization':`token ${S.ghToken}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
-      body:JSON.stringify({message:`Save story: ${S.title}`,content:contentBase64,sha:sha||undefined})});
-    if(!saveRes.ok){const e=await saveRes.json();throw new Error(e.message||'Errore salvataggio');}
-    setStatus('status-story','Storia salvata su GitHub ✓','ok');
-  }catch(e){setStatus('status-story',e.message,'err');}
-  finally{btn.disabled=false;}
+// ─────────────────────────────────────────────────────────
+// GitHub helpers
+// ─────────────────────────────────────────────────────────
+function ghBase() {
+  return `https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents`;
+}
+function ghHeaders(extra = {}) {
+  return {
+    'Authorization': `token ${S.ghToken}`,
+    'Accept': 'application/vnd.github.v3+json',
+    ...extra
+  };
+}
+async function ghGet(path) {
+  const res = await fetch(ghBase() + path, { headers: ghHeaders() });
+  if (!res.ok) throw new Error(res.status === 404 ? 'File non trovato' : 'Errore GitHub: ' + res.status);
+  return res.json();
+}
+async function ghPut(path, content, sha, message) {
+  const body = { message, content: strToBase64(content) };
+  if (sha) body.sha = sha;
+  const res = await fetch(ghBase() + path, {
+    method: 'PUT',
+    headers: ghHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Errore salvataggio'); }
+  return res.json();
+}
+async function ghDelete(path, sha, message) {
+  const res = await fetch(ghBase() + path, {
+    method: 'DELETE',
+    headers: ghHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ message, sha })
+  });
+  if (!res.ok) throw new Error('Errore eliminazione');
+}
+async function ghList(path) {
+  const res = await fetch(ghBase() + path, { headers: ghHeaders() });
+  if (res.status === 401 || res.status === 403) throw new Error('Token non valido o senza permessi.');
+  if (!res.ok) throw new Error(res.status === 404 ? 'Nessuna storia salvata' : 'Errore: ' + res.status);
+  return res.json();
+}
+
+// ─────────────────────────────────────────────────────────
+// GitHub: Salva storia
+// ─────────────────────────────────────────────────────────
+document.getElementById('btn-github-save').addEventListener('click', async () => {
+  if (!S.ghToken || !S.ghOwner || !S.ghRepo) { setStatus('status-story', 'Inserisci GitHub Token, Owner e Repo.', 'err'); return; }
+  const btn = document.getElementById('btn-github-save');
+  btn.disabled = true;
+  setStatus('status-story', 'Salvataggio su GitHub…', 'warn');
+  try {
+    const slug = (S.title || 'storia-senza-titolo').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+    const filePath = `/stories/${slug}.json`;
+    const storyData = {
+      title: S.title, audience: S.audience, tone: S.tone,
+      idea: S.idea, shortVersion: S.shortVersion,
+      chapters: S.chapters.map(ch => ({ number: ch.number, title: ch.title, text: ch.text, characters: ch.characters })),
+      timestamp: new Date().toISOString()
+    };
+    const json = JSON.stringify(storyData, null, 2);
+    let sha = '';
+    try { const existing = await ghGet(filePath); sha = existing.sha; } catch {}
+    await ghPut(filePath, json, sha, `Save story: ${S.title}`);
+    setStatus('status-story', 'Storia salvata su GitHub ✓', 'ok');
+  } catch (e) { setStatus('status-story', e.message, 'err'); }
+  finally { btn.disabled = false; }
 });
 
-// ── GitHub Load ──
-document.getElementById('btn-github-load').addEventListener('click',async()=>{
-  readInputs();
-  if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','GitHub non configurato.','err');return;}
-  const btn=document.getElementById('btn-github-load');
-  btn.disabled=true;
-  const storyName=document.getElementById('inp-story-select').value||S.title.toLowerCase().replace(/[^a-z0-9]/g,'-');
-  if(!storyName){setStatus('status-story','Seleziona una storia.','err');btn.disabled=false;return;}
-  setStatus('status-story','Caricamento…','warn');
-  try{
-    const res=await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/stories/${storyName}.json`,{headers:{'Authorization':`token ${S.ghToken}`}});
-    if(!res.ok) throw new Error(res.status===404?'Storia non trovata':'Errore: '+res.status);
-    const data=await res.json();
-    const json=JSON.parse(atob(data.content));
-    S.title=json.title;S.audience=json.audience;S.tone=json.tone;S.idea=json.idea;
-    S.shortVersion=json.shortVersion;S.chapters=json.chapters||[];
-    document.getElementById('inp-title').value=S.title;
-    document.getElementById('inp-audience').value=S.audience||'';
-    document.getElementById('inp-tone').value=S.tone||'';
-    document.getElementById('inp-idea').value=S.idea||'';
-    document.getElementById('short-story-box').textContent=S.shortVersion||'Nessun testo.';
+// ─────────────────────────────────────────────────────────
+// GitHub: Carica storia
+// ─────────────────────────────────────────────────────────
+document.getElementById('btn-github-load').addEventListener('click', async () => {
+  if (!S.ghToken || !S.ghOwner || !S.ghRepo) { setStatus('status-story', 'GitHub non configurato.', 'err'); return; }
+  const btn = document.getElementById('btn-github-load');
+  btn.disabled = true;
+  const storyName = document.getElementById('inp-story-select').value
+    || S.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  if (!storyName) { setStatus('status-story', 'Seleziona una storia.', 'err'); btn.disabled = false; return; }
+  setStatus('status-story', 'Caricamento…', 'warn');
+  try {
+    const data = await ghGet(`/stories/${storyName}.json`);
+    const json = JSON.parse(base64ToStr(data.content.replace(/\n/g, '')));
+    S.title = json.title; S.audience = json.audience; S.tone = json.tone;
+    S.idea = json.idea; S.shortVersion = json.shortVersion; S.chapters = json.chapters || [];
+    document.getElementById('inp-title').value    = S.title    || '';
+    document.getElementById('inp-audience').value = S.audience || '';
+    document.getElementById('inp-tone').value     = S.tone     || '';
+    document.getElementById('inp-idea').value     = S.idea     || '';
+    document.getElementById('short-story-box').textContent = S.shortVersion || 'Nessun testo.';
     renderChapters();
-    setStatus('status-story','Storia caricata ✓','ok');
-  }catch(e){setStatus('status-story',e.message,'err');}
-  finally{btn.disabled=false;}
+    setStatus('status-story', 'Storia caricata ✓', 'ok');
+  } catch (e) { setStatus('status-story', e.message, 'err'); }
+  finally { btn.disabled = false; }
 });
 
-// ── Lista storie ──
-document.getElementById('btn-list-stories').addEventListener('click',async()=>{
-  readInputs();
-  if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','Inserisci GitHub Token, Owner e Repo.','err');return;}
-  const btn=document.getElementById('btn-list-stories');
-  btn.disabled=true;
-  setStatus('status-story','Carico lista…','warn');
-  try{
-    const res=await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/stories`,{headers:{'Authorization':`token ${S.ghToken}`,'Accept':'application/vnd.github.v3+json'}});
-    if(res.status===401||res.status===403) throw new Error('Token non valido o senza permessi.');
-    if(!res.ok) throw new Error(res.status===404?'Nessuna storia salvata':'Errore: '+res.status);
-    const files=await res.json();
-    const select=document.getElementById('inp-story-select');
-    select.innerHTML='<option value="">— Seleziona storia —</option>';
-    files.forEach(f=>{
-      if(f.name.endsWith('.json')){
-        const opt=document.createElement('option');
-        opt.value=f.name.replace('.json','');
-        opt.textContent=f.name.replace('.json','');
-        select.appendChild(opt);
-      }
+// ─────────────────────────────────────────────────────────
+// GitHub: Lista storie
+// ─────────────────────────────────────────────────────────
+document.getElementById('btn-list-stories').addEventListener('click', async () => {
+  if (!S.ghToken || !S.ghOwner || !S.ghRepo) { setStatus('status-story', 'Inserisci GitHub Token, Owner e Repo.', 'err'); return; }
+  const btn = document.getElementById('btn-list-stories');
+  btn.disabled = true;
+  setStatus('status-story', 'Carico lista…', 'warn');
+  try {
+    const files = await ghList('/stories');
+    const select = document.getElementById('inp-story-select');
+    select.innerHTML = '<option value="">— Seleziona storia —</option>';
+    const jsonFiles = files.filter(f => f.name.endsWith('.json'));
+    jsonFiles.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.name.replace('.json', '');
+      opt.textContent = f.name.replace('.json', '');
+      select.appendChild(opt);
     });
-    setStatus('status-story',`${files.length} storie trovate.`,'ok');
-  }catch(e){setStatus('status-story',e.message,'err');}
-  finally{btn.disabled=false;}
+    setStatus('status-story', `${jsonFiles.length} storie trovate.`, 'ok');
+  } catch (e) { setStatus('status-story', e.message, 'err'); }
+  finally { btn.disabled = false; }
 });
 
-document.getElementById('inp-story-select').addEventListener('change',()=>{
-  if(document.getElementById('inp-story-select').value) document.getElementById('btn-github-load').click();
+document.getElementById('inp-story-select').addEventListener('change', () => {
+  if (document.getElementById('inp-story-select').value)
+    document.getElementById('btn-github-load').click();
 });
 
-// ── Elimina storia ──
-document.getElementById('btn-delete-story').addEventListener('click',async()=>{
-  readInputs();
-  if(!S.ghToken||!S.ghOwner||!S.ghRepo){setStatus('status-story','GitHub non configurato.','err');return;}
-  const storyName=document.getElementById('inp-story-select').value;
-  if(!storyName) return setStatus('status-story','Seleziona una storia da eliminare.','err');
-  if(!confirm('Eliminare "'+storyName+'"?')) return;
-  setStatus('status-story','Eliminazione…','warn');
-  try{
-    const getRes=await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/stories/${storyName}.json`,{headers:{'Authorization':`token ${S.ghToken}`,'Accept':'application/vnd.github.v3+json'}});
-    if(!getRes.ok) throw new Error('Storia non trovata');
-    const fileData=await getRes.json();
-    const delRes=await fetch(`https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents/stories/${storyName}.json`,{
-      method:'DELETE',
-      headers:{'Authorization':`token ${S.ghToken}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
-      body:JSON.stringify({message:`Delete story: ${storyName}`,sha:fileData.sha})});
-    if(!delRes.ok) throw new Error('Errore eliminazione');
-    setStatus('status-story','Storia eliminata ✓','ok');
+// ─────────────────────────────────────────────────────────
+// GitHub: Elimina storia
+// ─────────────────────────────────────────────────────────
+document.getElementById('btn-delete-story').addEventListener('click', async () => {
+  if (!S.ghToken || !S.ghOwner || !S.ghRepo) { setStatus('status-story', 'GitHub non configurato.', 'err'); return; }
+  const storyName = document.getElementById('inp-story-select').value;
+  if (!storyName) return setStatus('status-story', 'Seleziona una storia da eliminare.', 'err');
+  if (!confirm(`Eliminare "${storyName}"?`)) return;
+  setStatus('status-story', 'Eliminazione…', 'warn');
+  try {
+    const fileData = await ghGet(`/stories/${storyName}.json`);
+    await ghDelete(`/stories/${storyName}.json`, fileData.sha, `Delete story: ${storyName}`);
+    setStatus('status-story', 'Storia eliminata ✓', 'ok');
     document.getElementById('btn-list-stories').click();
-  }catch(e){setStatus('status-story',e.message,'err');}
+  } catch (e) { setStatus('status-story', e.message, 'err'); }
 });
 
-// ── Salva chiavi ──
-document.getElementById('btn-save-keys').addEventListener('click',()=>{
-  const apiKey=document.getElementById('inp-apikey').value.trim();
-  const ghToken=document.getElementById('inp-gh-token').value.trim();
-  const ghOwner=document.getElementById('inp-gh-owner').value.trim();
-  const ghRepo=document.getElementById('inp-gh-repo').value.trim();
-  if(!apiKey&&!ghToken){setStatus('status-settings','Inserisci almeno una chiave.','err');return;}
-  if(apiKey) localStorage.setItem('storybook_apikey',apiKey);
-  if(ghToken) localStorage.setItem('storybook_gh_token',ghToken);
-  if(ghOwner) localStorage.setItem('storybook_gh_owner',ghOwner);
-  if(ghRepo) localStorage.setItem('storybook_gh_repo',ghRepo);
-  setStatus('status-settings','Credenziali salvate ✓','ok');
+// ─────────────────────────────────────────────────────────
+// Salva credenziali (manuale)
+// ─────────────────────────────────────────────────────────
+document.getElementById('btn-save-keys').addEventListener('click', () => {
+  if (!S.apiKey && !S.ghToken) { setStatus('status-settings', 'Inserisci almeno una chiave.', 'err'); return; }
+  // I valori sono già nel localStorage grazie ai listener reattivi.
+  // Questo bottone ora serve solo come conferma visiva.
+  setStatus('status-settings', 'Credenziali salvate ✓', 'ok');
 });
 
-// ── Raffina idea ──
-document.getElementById('btn-refine').addEventListener('click',async()=>{
-  readInputs();
-  if(!S.idea) return setStatus('status-story','Scrivi un\'idea base.','err');
-  const btn=document.getElementById('btn-refine');
-  btn.disabled=true;
-  setStatus('status-story','Raffinamento in corso…','warn');
-  try{
-    const res=await callGroqText({prompt:`Raffina questa idea per una storia: ${S.idea}. Target: ${S.audience}. Tono: ${S.tone}. Restituisci circa 150 parole in italiano.`});
-    S.shortVersion=res;
-    document.getElementById('short-story-box').textContent=res;
-    setStatus('status-story','Idea raffinata ✓','ok');
-  }catch(e){setStatus('status-story',e.message,'err');}
-  finally{btn.disabled=false;}
+// ─────────────────────────────────────────────────────────
+// Raffina idea
+// ─────────────────────────────────────────────────────────
+document.getElementById('btn-refine').addEventListener('click', async () => {
+  if (!S.idea) return setStatus('status-story', "Scrivi un'idea base.", 'err');
+  const btn = document.getElementById('btn-refine');
+  btn.disabled = true;
+  setStatus('status-story', 'Raffinamento in corso…', 'warn');
+  try {
+    const res = await callGroqText({ prompt: `Raffina questa idea per una storia: ${S.idea}. Target: ${S.audience}. Tono: ${S.tone}. Restituisci circa 150 parole in italiano.` });
+    S.shortVersion = res;
+    document.getElementById('short-story-box').textContent = res;
+    setStatus('status-story', 'Idea raffinata ✓', 'ok');
+  } catch (e) { setStatus('status-story', e.message, 'err'); }
+  finally { btn.disabled = false; }
 });
 
-// ── Genera capitoli ──
-document.getElementById('btn-genstory').addEventListener('click',async()=>{
-  readInputs();
-  const btn=document.getElementById('btn-genstory');
-  btn.disabled=true;
-  setStatus('status-story','Generazione capitoli 1–5…','warn');
-  try{
-    const p1=`Genera i primi 5 capitoli di una storia basata su: ${S.shortVersion||S.idea}. Restituisci SOLO un array JSON: [{"number":1,"title":"...","text":"...","characters":["..."]}]`;
-    const r1=await callGroqText({prompt:p1});
-    const ch1=extractJson(r1);
-    setStatus('status-story','Generazione capitoli 6–10…','warn');
-    const r2=await callGroqText({prompt:`Continua la storia dopo questi capitoli: ${r1}. Genera i capitoli 6-10. Stesso formato JSON.`});
-    const ch2=extractJson(r2);
-    S.chapters=[...ch1,...ch2];
+// ─────────────────────────────────────────────────────────
+// Genera capitoli
+// ─────────────────────────────────────────────────────────
+document.getElementById('btn-genstory').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-genstory');
+  btn.disabled = true;
+  setStatus('status-story', 'Generazione capitoli 1–5…', 'warn');
+  try {
+    const base = S.shortVersion || S.idea;
+    const r1 = await callGroqText({ prompt: `Genera i primi 5 capitoli di una storia basata su: ${base}. Restituisci SOLO un array JSON: [{"number":1,"title":"...","text":"...","characters":["..."]}]` });
+    const ch1 = extractJson(r1);
+    setStatus('status-story', 'Generazione capitoli 6–10…', 'warn');
+    const r2 = await callGroqText({ prompt: `Continua la storia dopo questi capitoli: ${r1}. Genera i capitoli 6-10. Stesso formato JSON.` });
+    const ch2 = extractJson(r2);
+    S.chapters = [...ch1, ...ch2];
     renderChapters();
-    setStatus('status-story','10 capitoli pronti ✓','ok');
-  }catch(e){setStatus('status-story',e.message,'err');}
-  finally{btn.disabled=false;}
+    setStatus('status-story', '10 capitoli pronti ✓', 'ok');
+  } catch (e) { setStatus('status-story', e.message, 'err'); }
+  finally { btn.disabled = false; }
 });
 
-// ── Render capitoli ──
-function renderChapters(){
-  const list=document.getElementById('chapter-list');
-  list.innerHTML='';
-  if(!S.chapters.length){
-    list.innerHTML='<div class="empty"><div class="empty-icon">🌙</div><p>Nessun capitolo generato.</p></div>';
+// ─────────────────────────────────────────────────────────
+// Render capitoli
+// ─────────────────────────────────────────────────────────
+function renderChapters() {
+  const list = document.getElementById('chapter-list');
+  // Rimuove solo i vecchi listener clonando il nodo
+  const fresh = list.cloneNode(false);
+  list.parentNode.replaceChild(fresh, list);
+  const container = document.getElementById('chapter-list');
+
+  if (!S.chapters.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🌙</div><p>Nessun capitolo generato.</p></div>';
     return;
   }
+
   S.chapters.forEach((ch, idx) => {
     const card = document.createElement('div');
     card.className = 'ch-card';
-    const tags = (ch.characters||[]).map(n => `<span class="ch-tag">${escapeHtml(n)}</span>`).join('');
-
+    const tags = (ch.characters || []).map(n => `<span class="ch-tag">${escapeHtml(n)}</span>`).join('');
     card.innerHTML = `
 <div class="ch-header">
   <span class="ch-num">Cap. ${ch.number}</span>
@@ -830,96 +916,69 @@ function renderChapters(){
     </div>
     <div class="prompt-box" id="prompt-${idx}">
       <div class="prompt-text" id="prompt-text-${idx}"></div>
-      <div class="prompt-copy-hint">✅ Prompt copiato negli appunti — incollalo su <strong>Gemini</strong> o <strong>ChatGPT</strong></div>
+      <div class="prompt-copy-hint">✅ Copiato negli appunti — incollalo su <strong>Gemini</strong> o <strong>ChatGPT</strong></div>
     </div>
     <div class="img-preview" id="img-${idx}">Nessuna immagine</div>
   </div>
 </div>`;
-    list.appendChild(card);
+    container.appendChild(card);
   });
 
-  // ── Event delegation per tutti i bottoni dei capitoli ──
-  list.addEventListener('click', e => {
-    // bottone Modifica
-    const editBtn = e.target.closest('.btn-edit-toggle');
-    if(editBtn){
-      const idx = parseInt(editBtn.dataset.idx);
-      startEdit(idx);
-      return;
-    }
-    // bottone Salva modifica
-    const saveBtn = e.target.closest('.btn-save-edit');
-    if(saveBtn){
-      const idx = parseInt(saveBtn.dataset.idx);
-      saveEdit(idx);
-      return;
-    }
-    // bottone Annulla modifica
+  // Event delegation unica sul container
+  container.addEventListener('click', e => {
+    const editBtn   = e.target.closest('.btn-edit-toggle');
+    const saveBtn   = e.target.closest('.btn-save-edit');
     const cancelBtn = e.target.closest('.btn-cancel-edit');
-    if(cancelBtn){
-      const idx = parseInt(cancelBtn.dataset.idx);
-      cancelEdit(idx);
-      return;
-    }
-    // bottone Prompt immagine
     const promptBtn = e.target.closest('.btn-gen-prompt');
-    if(promptBtn){
-      const idx = parseInt(promptBtn.dataset.idx);
-      genPrompt(idx);
-      return;
-    }
-  }, {once: false});
+    if (editBtn)   { startEdit(parseInt(editBtn.dataset.idx));   return; }
+    if (saveBtn)   { saveEdit(parseInt(saveBtn.dataset.idx));    return; }
+    if (cancelBtn) { cancelEdit(parseInt(cancelBtn.dataset.idx)); return; }
+    if (promptBtn) { genPrompt(parseInt(promptBtn.dataset.idx)); return; }
+  });
 }
 
-// Helper anti-XSS
-function escapeHtml(str){
-  return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#39;');
-}
-
-// ── Inline editing ──
-function startEdit(idx){
+// ─────────────────────────────────────────────────────────
+// Inline editing
+// ─────────────────────────────────────────────────────────
+function startEdit(idx) {
   const col = document.getElementById(`ch-col-${idx}`);
-  const ta = document.getElementById(`ch-textarea-${idx}`);
+  const ta  = document.getElementById(`ch-textarea-${idx}`);
+  // Sincronizza textarea col testo corrente (potrebbe essere stato modificato precedentemente)
+  ta.value = S.chapters[idx].text;
   col.classList.add('editing');
-  // auto-resize textarea al contenuto
   ta.style.height = 'auto';
   ta.style.height = ta.scrollHeight + 'px';
   ta.focus();
 }
 
-function saveEdit(idx){
-  const col = document.getElementById(`ch-col-${idx}`);
-  const ta = document.getElementById(`ch-textarea-${idx}`);
+function saveEdit(idx) {
+  const col  = document.getElementById(`ch-col-${idx}`);
+  const ta   = document.getElementById(`ch-textarea-${idx}`);
   const view = document.getElementById(`ch-text-${idx}`);
-  const newText = ta.value;
-  S.chapters[idx].text = newText;
-  view.textContent = newText;
+  S.chapters[idx].text = ta.value;
+  view.textContent = ta.value;
   col.classList.remove('editing');
-  setStatus('status-story','Capitolo modificato ✓','ok');
+  setStatus('status-story', 'Capitolo modificato ✓', 'ok');
 }
 
-function cancelEdit(idx){
+function cancelEdit(idx) {
   const col = document.getElementById(`ch-col-${idx}`);
-  const ta = document.getElementById(`ch-textarea-${idx}`);
-  // ripristina il testo originale nel textarea
+  const ta  = document.getElementById(`ch-textarea-${idx}`);
   ta.value = S.chapters[idx].text;
   col.classList.remove('editing');
 }
 
-// ── Genera prompt immagine ──
-function genPrompt(idx){
+// ─────────────────────────────────────────────────────────
+// Genera prompt immagine
+// ─────────────────────────────────────────────────────────
+function genPrompt(idx) {
   const ch = S.chapters[idx];
-  const charRefs = (ch.characters||[]).map(c => {
+  const charRefs = (ch.characters || []).map(c => {
     const role = c.toLowerCase().includes('papà') ? 'il papà'
                : c.toLowerCase().includes('mamm') ? 'la mamma' : c;
     return `${c} (${role})`;
   }).join(', ');
-  const prevRef = idx > 0 ? ` Mantieni coerenza stilistica con le illustrazioni precedenti.` : '';
+  const prevRef = idx > 0 ? ' Mantieni coerenza stilistica con le illustrazioni precedenti.' : '';
   const p =
 `Crea un'illustrazione per un libro illustrato per bambini.
 
@@ -930,58 +989,79 @@ Personaggi: ${charRefs || 'come descritti nel testo'}.
 Stile: colori pastello morbidi, tratto morbido, atmosfera magica e fiabesca, adatto a bambini 4-8 anni.${prevRef}
 NON inserire testi o scritte nell'immagine.`;
 
-  const box = document.getElementById(`prompt-${idx}`);
+  const box    = document.getElementById(`prompt-${idx}`);
   const textEl = document.getElementById(`prompt-text-${idx}`);
   textEl.textContent = p;
   box.classList.add('visible');
-  navigator.clipboard.writeText(p).catch(()=>{});
-  setStatus('status-story','Prompt copiato ✓ — incollalo su Gemini o ChatGPT','ok');
+  navigator.clipboard.writeText(p).catch(() => {});
+  setStatus('status-story', 'Prompt copiato ✓ — incollalo su Gemini o ChatGPT', 'ok');
 }
 
-// ── Load on start ──
+// ─────────────────────────────────────────────────────────
+// Inizializzazione
+// ─────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
-  const saved = {
-    apiKey: localStorage.getItem('storybook_apikey')||'',
-    ghToken: localStorage.getItem('storybook_gh_token')||'',
-    ghOwner: localStorage.getItem('storybook_gh_owner')||'',
-    ghRepo:  localStorage.getItem('storybook_gh_repo')||''
-  };
-  if(saved.apiKey)  document.getElementById('inp-apikey').value  = saved.apiKey;
-  if(saved.ghToken) document.getElementById('inp-gh-token').value = saved.ghToken;
-  if(saved.ghOwner) document.getElementById('inp-gh-owner').value = saved.ghOwner;
-  if(saved.ghRepo)  document.getElementById('inp-gh-repo').value  = saved.ghRepo;
+  // Prima aggancia i listener reattivi
+  bindInputs();
 
-  const repoOwner='Zizzo91', repoName='Storybook';
+  // Poi popola i campi dal localStorage (i listener aggiorneranno S automaticamente via evento)
+  const fromLS = [
+    ['inp-apikey',   'storybook_apikey'],
+    ['inp-gh-token', 'storybook_gh_token'],
+    ['inp-gh-owner', 'storybook_gh_owner'],
+    ['inp-gh-repo',  'storybook_gh_repo'],
+  ];
+  fromLS.forEach(([id, key]) => {
+    const val = localStorage.getItem(key);
+    if (val) {
+      const el = document.getElementById(id);
+      el.value = val;
+      el.dispatchEvent(new Event('input')); // aggiorna S
+    }
+  });
+
+  // Modello testo
+  const settings = localStorage.getItem('storybook_settings');
+  if (settings) {
+    try {
+      const s = JSON.parse(settings);
+      if (s.textModel) {
+        const tm = document.getElementById('inp-textmodel');
+        tm.value = s.textModel;
+        S.textModel = s.textModel;
+      }
+    } catch {}
+  }
+
+  // Prova a caricare config da GitHub Pages o file locale
+  const repoOwner = 'Zizzo91', repoName = 'Storybook';
   const paths = [
-    `settings/config.json`,
+    'settings/config.json',
     `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/settings/config.json`
   ];
-  for(const p of paths){
-    try{
+  for (const p of paths) {
+    try {
       const res = await fetch(p);
-      if(res.ok){
+      if (res.ok) {
         const d = await res.json();
-        if(d.groq        && !saved.apiKey)  document.getElementById('inp-apikey').value  = d.groq;
-        if(d.githubToken && !saved.ghToken) document.getElementById('inp-gh-token').value = d.githubToken;
-        if(d.githubOwner && !saved.ghOwner) document.getElementById('inp-gh-owner').value = d.githubOwner;
-        if(d.githubRepo  && !saved.ghRepo)  document.getElementById('inp-gh-repo').value  = d.githubRepo;
-        setStatus('status-settings','Configurazione caricata ✓','ok');
+        const map = [
+          ['inp-apikey',   d.groq,         'storybook_apikey'],
+          ['inp-gh-token', d.githubToken,  'storybook_gh_token'],
+          ['inp-gh-owner', d.githubOwner,  'storybook_gh_owner'],
+          ['inp-gh-repo',  d.githubRepo,   'storybook_gh_repo'],
+        ];
+        map.forEach(([id, val, lsKey]) => {
+          if (val && !localStorage.getItem(lsKey)) {
+            const el = document.getElementById(id);
+            el.value = val;
+            el.dispatchEvent(new Event('input'));
+          }
+        });
+        setStatus('status-settings', 'Configurazione caricata ✓', 'ok');
         break;
       }
-    }catch{}
+    } catch {}
   }
-  const settings = localStorage.getItem('storybook_settings');
-  if(settings){
-    try{
-      const s = JSON.parse(settings);
-      if(s.textModel) document.getElementById('inp-textmodel').value = s.textModel;
-    }catch{}
-  }
-});
-
-document.getElementById('inp-textmodel').addEventListener('change', () => {
-  localStorage.setItem('storybook_settings', JSON.stringify({textModel: document.getElementById('inp-textmodel').value}));
-  document.getElementById('pill-text-model').textContent = document.getElementById('inp-textmodel').value.split('-').slice(0,2).join('-');
 });
 </script>
 </body>
