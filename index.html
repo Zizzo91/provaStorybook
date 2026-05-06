@@ -512,6 +512,7 @@ h1,h2,h3,h4{font-family:var(--font-display)}
       <div class="btn-group">
         <button class="btn btn-ghost" id="btn-refine">✨ Raffina idea</button>
         <button class="btn btn-accent" id="btn-genstory">📚 Genera 10 capitoli</button>
+        <button class="btn btn-cyan" id="btn-gen-cover-prompt">🖼️ Copertina storia</button>
         <div style="flex:1"></div>
         <button class="btn btn-ghost" id="btn-github-load">📥 Carica</button>
         <button class="btn btn-green" id="btn-github-save">📤 Salva</button>
@@ -528,6 +529,13 @@ h1,h2,h3,h4{font-family:var(--font-display)}
         </div>
       </div>
       <div class="story-box" id="short-story-box">Nessun testo raffinato ancora.</div>
+      <div class="field" style="margin-top:14px">
+        <label>Prompt copertina storia</label>
+        <div class="prompt-box" id="cover-prompt-output">
+          <div class="prompt-text" id="cover-prompt-text"></div>
+          <div class="prompt-copy-hint">✅ Copiato negli appunti — incollalo su <strong>Gemini</strong> o <strong>ChatGPT</strong></div>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -544,9 +552,50 @@ h1,h2,h3,h4{font-family:var(--font-display)}
           <p>Nessun capitolo generato.</p>
         </div>
       </div>
+     </div>
+
+    <!-- Combined Stories Card -->
+    <div class="card" id="combined-stories-card">
+      <div class="card-header">
+        <div class="card-icon purple">📚</div>
+        <div>
+          <div class="card-title">Unisci due storie</div>
+          <div class="card-sub">Genera titolo comune e copertina per due storie selezionate.</div>
+        </div>
+      </div>
+      <div class="row2" style="margin-bottom:16px">
+        <div class="field">
+          <label>Prima storia</label>
+          <select id="inp-combine-story-1">
+            <option value="">— Seleziona storia —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Seconda storia</label>
+          <select id="inp-combine-story-2">
+            <option value="">— Seleziona storia —</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-group" style="margin-bottom:16px">
+        <button class="btn btn-accent" id="btn-gen-combined-title">📝 Genera titolo comune</button>
+        <button class="btn btn-cyan" id="btn-gen-combined-cover">🖼️ Genera prompt copertina congiunta</button>
+      </div>
+      <div class="field" style="margin-bottom:16px">
+        <label>Titolo comune generato</label>
+        <div class="story-box" id="combined-title-output">Nessun titolo generato.</div>
+      </div>
+      <div class="field">
+        <label>Prompt copertina congiunta</label>
+        <div class="prompt-box" id="combined-prompt-output">
+          <div class="prompt-text" id="combined-prompt-text"></div>
+          <div class="prompt-copy-hint">✅ Copiato negli appunti — incollalo su <strong>Gemini</strong> o <strong>ChatGPT</strong></div>
+        </div>
+      </div>
+      <div id="status-combined" class="status"></div>
     </div>
 
-  </main>
+   </main>
 </div>
 
 <script>
@@ -796,22 +845,28 @@ document.getElementById('btn-github-load').addEventListener('click', () => {
 });
 
 // ─────────────────────────────────────────────────────────
-// GitHub: Lista storie
+// GitHub: Lista storie (popola tutti e 3 i dropdown)
 // ─────────────────────────────────────────────────────────
+function populateStorySelect(selectId, jsonFiles) {
+  const select = document.getElementById(selectId);
+  select.innerHTML = '<option value="">— Seleziona storia —</option>';
+  jsonFiles.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.name.replace('.json', '');
+    opt.textContent = f.name.replace('.json', '');
+    select.appendChild(opt);
+  });
+}
+
 document.getElementById('btn-list-stories').addEventListener('click', () => {
   if (!S.ghToken || !S.ghOwner || !S.ghRepo) { setStatus('status-story', 'Inserisci GitHub Token, Owner e Repo.', 'err'); return; }
   withButton('btn-list-stories', 'status-story', async () => {
     setStatus('status-story', 'Carico lista…', 'warn');
     const files = await ghList('/stories');
-    const select = document.getElementById('inp-story-select');
-    select.innerHTML = '<option value="">— Seleziona storia —</option>';
     const jsonFiles = files.filter(f => f.name.endsWith('.json'));
-    jsonFiles.forEach(f => {
-      const opt = document.createElement('option');
-      opt.value = f.name.replace('.json', '');
-      opt.textContent = f.name.replace('.json', '');
-      select.appendChild(opt);
-    });
+    populateStorySelect('inp-story-select', jsonFiles);
+    populateStorySelect('inp-combine-story-1', jsonFiles);
+    populateStorySelect('inp-combine-story-2', jsonFiles);
     setStatus('status-story', `${jsonFiles.length} storie trovate.`, 'ok');
   });
 });
@@ -1000,6 +1055,107 @@ NON inserire testi o scritte nell'immagine.`;
   navigator.clipboard.writeText(p).catch(() => {});
   setStatus('status-story', 'Prompt copiato ✓ — incollalo su Gemini o ChatGPT', 'ok');
 }
+
+// ─────────────────────────────────────────────────────────
+// OTTIMIZZAZIONE 4 — fetchStoryFromGitHub
+// Carica il JSON di una storia dal repo GitHub.
+// ─────────────────────────────────────────────────────────
+async function fetchStoryFromGitHub(storyName) {
+  const data = await ghGet(`/stories/${storyName}.json`);
+  return JSON.parse(base64ToStr(data.content.replace(/\n/g, '')));
+}
+
+// ─────────────────────────────────────────────────────────
+// Funzionalità 1a — Genera titolo comune tra due storie
+// ─────────────────────────────────────────────────────────
+document.getElementById('btn-gen-combined-title').addEventListener('click', () => {
+  const s1 = document.getElementById('inp-combine-story-1').value;
+  const s2 = document.getElementById('inp-combine-story-2').value;
+  if (!s1 || !s2) { setStatus('status-combined', 'Seleziona due storie.', 'err'); return; }
+  if (s1 === s2) { setStatus('status-combined', 'Seleziona due storie diverse.', 'err'); return; }
+  withButton('btn-gen-combined-title', 'status-combined', async () => {
+    setStatus('status-combined', 'Carico storie e genero titolo…', 'warn');
+    const [story1, story2] = await Promise.all([
+      fetchStoryFromGitHub(s1),
+      fetchStoryFromGitHub(s2)
+    ]);
+    const prompt = `Ho due storie per bambini:
+1) Titolo: "${story1.title}"
+   Idea: ${story1.shortVersion || story1.idea}
+   Personaggi: ${story1.chapters?.flatMap(c => c.characters || []).join(', ') || 'vari'}
+
+2) Titolo: "${story2.title}"
+   Idea: ${story2.shortVersion || story2.idea}
+   Personaggi: ${story2.chapters?.flatMap(c => c.characters || []).join(', ') || 'vari'}
+
+Genera un titolo comune accattivante in italiano che possa unire queste due storie in un unico libro, come "Pippo e Poppo crescono insieme". Rispondi SOLO con il titolo, senza spiegazioni.`;
+    const title = await callGroqText({ prompt, temperature: 0.8, maxTokens: 100 });
+    document.getElementById('combined-title-output').textContent = title;
+    setStatus('status-combined', 'Titolo comune generato ✓', 'ok');
+  });
+});
+
+// ─────────────────────────────────────────────────────────
+// Funzionalità 1b — Genera prompt copertina congiunta
+// ─────────────────────────────────────────────────────────
+document.getElementById('btn-gen-combined-cover').addEventListener('click', () => {
+  const s1 = document.getElementById('inp-combine-story-1').value;
+  const s2 = document.getElementById('inp-combine-story-2').value;
+  if (!s1 || !s2) { setStatus('status-combined', 'Seleziona due storie.', 'err'); return; }
+  if (s1 === s2) { setStatus('status-combined', 'Seleziona due storie diverse.', 'err'); return; }
+  withButton('btn-gen-combined-cover', 'status-combined', async () => {
+    setStatus('status-combined', 'Carico storie e genero prompt…', 'warn');
+    const [story1, story2] = await Promise.all([
+      fetchStoryFromGitHub(s1),
+      fetchStoryFromGitHub(s2)
+    ]);
+    const chars1 = [...new Set(story1.chapters?.flatMap(c => c.characters || []) || [])].join(', ');
+    const chars2 = [...new Set(story2.chapters?.flatMap(c => c.characters || []) || [])].join(', ');
+    const prompt = `Crea un prompt per generare con AI (Gemini/ChatGPT) l'immagine di copertina di un libro che contiene due storie per bambini.
+
+Storia 1: "${story1.title}"
+Trama: ${(story1.shortVersion || story1.idea).slice(0, 300)}
+Personaggi principali: ${chars1 || 'vari'}
+
+Storia 2: "${story2.title}"
+Trama: ${(story2.shortVersion || story2.idea).slice(0, 300)}
+Personaggi principali: ${chars2 || 'vari'}
+
+Il prompt deve descrivere una copertina che rappresenti entrambe le storie in modo armonioso, con stile: colori pastello morbidi, tratto dolce, atmosfera magica e fiabesca, adatto a bambini 4-8 anni. NON inserire testi o scritte nell'immagine. Rispondi SOLO con il prompt pronto da copiare.`;
+    const coverPrompt = await callGroqText({ prompt, temperature: 0.7, maxTokens: 500 });
+    const textEl = document.getElementById('combined-prompt-text');
+    textEl.textContent = coverPrompt;
+    document.getElementById('combined-prompt-output').classList.add('visible');
+    navigator.clipboard.writeText(coverPrompt).catch(() => {});
+    setStatus('status-combined', 'Prompt copertina copiato ✓ — incollalo su Gemini o ChatGPT', 'ok');
+  });
+});
+
+// ─────────────────────────────────────────────────────────
+// Funzionalità 2 — Genera prompt copertina storia in corso
+// ─────────────────────────────────────────────────────────
+document.getElementById('btn-gen-cover-prompt').addEventListener('click', () => {
+  if (!S.title) { setStatus('status-story', 'Nessuna storia in corso.', 'err'); return; }
+  withButton('btn-gen-cover-prompt', 'status-story', async () => {
+    setStatus('status-story', 'Genero prompt copertina…', 'warn');
+    const chars = [...new Set(S.chapters.flatMap(c => c.characters || []))].join(', ');
+    const prompt = `Crea un prompt per generare con AI (Gemini/ChatGPT) l'immagine di copertina di una storia per bambini.
+
+Titolo: "${S.title}"
+Target: ${S.audience || 'bambini'}
+Tono: ${S.tone || 'magico'}
+Trama: ${(S.shortVersion || S.idea).slice(0, 400)}
+Personaggi principali: ${chars || 'vari'}
+
+Il prompt deve descrivere una copertina che rappresenti la storia in modo accattivante, con stile: colori pastello morbidi, tratto dolce, atmosfera magica e fiabesca. NON inserire testi o scritte nell'immagine. Rispondi SOLO con il prompt pronto da copiare.`;
+    const coverPrompt = await callGroqText({ prompt, temperature: 0.7, maxTokens: 500 });
+    const textEl = document.getElementById('cover-prompt-text');
+    textEl.textContent = coverPrompt;
+    document.getElementById('cover-prompt-output').classList.add('visible');
+    navigator.clipboard.writeText(coverPrompt).catch(() => {});
+    setStatus('status-story', 'Prompt copertina copiato ✓ — incollalo su Gemini o ChatGPT', 'ok');
+  });
+});
 
 // ─────────────────────────────────────────────────────────
 // Inizializzazione
