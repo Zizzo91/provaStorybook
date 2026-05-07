@@ -929,13 +929,13 @@ document.getElementById('btn-genstory').addEventListener('click', () => {
     const prompt1 = `Genera i primi 5 capitoli di una storia basata su: ${base}. Restituisci SOLO un array JSON: [{"number":1,"title":"...","text":"...","characters":["..."]}]`;
     const { chapters: ch1, raw: raw1 } = await generateChapterBatch(prompt1);
 
-    setStatus('status-story', 'Generazione capitoli 6–10…', 'warn');
-    const prompt2 = `Continua la storia dopo questi capitoli: ${raw1}. Genera i capitoli 6-10. Stesso formato JSON array.`;
+    setStatus('status-story', 'Generazione capitoli 6–9…', 'warn');
+    const prompt2 = `Continua la storia dopo questi capitoli: ${raw1}. Genera i capitoli 6-9 (totale 4 capitoli). Stesso formato JSON array.`;
     const { chapters: ch2 } = await generateChapterBatch(prompt2);
 
     S.chapters = [...ch1, ...ch2];
     renderChapters();
-    setStatus('status-story', '10 capitoli pronti ✓', 'ok');
+    setStatus('status-story', '9 capitoli pronti ✓', 'ok');
   });
 });
 
