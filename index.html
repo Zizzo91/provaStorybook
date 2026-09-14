@@ -416,7 +416,7 @@ h1,h2,h3,h4{font-family:var(--font-display)}
     <h1>AI Storybook Studio</h1>
   </div>
   <div class="header-pills">
-    <span class="pill accent" id="pill-text-model">llama-3.3-70b</span>
+    <span class="pill accent" id="pill-text-model">gpt-oss-120b</span>
     <span class="pill" id="pill-provider">Groq</span>
     <span class="pill">Pollinations.AI</span>
   </div>
@@ -431,10 +431,8 @@ h1,h2,h3,h4{font-family:var(--font-display)}
       <div class="field">
         <label>Modello testo</label>
         <select id="inp-textmodel">
-          <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-          <option value="qwen-qwq-32b">qwen-qwq-32b</option>
-          <option value="deepseek-r1-distill-llama-70b">deepseek-r1-distill-llama-70b</option>
-          <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+          <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
+          <option value="qwen/qwen3.6-27b">qwen/qwen3.6-27b</option>
         </select>
       </div>
       <div class="field">
@@ -494,7 +492,7 @@ h1,h2,h3,h4{font-family:var(--font-display)}
         <div class="card-icon blue">💡</div>
         <div>
           <div class="card-title">Idea storia</div>
-          <div class="card-sub">Compila i campi e genera la narrazione in 9 capitoli.</div>
+          <div class="card-sub">Compila i campi e genera la narrazione in 10 capitoli.</div>
         </div>
       </div>
       <div class="field">
@@ -511,7 +509,7 @@ h1,h2,h3,h4{font-family:var(--font-display)}
       </div>
       <div class="btn-group">
         <button class="btn btn-ghost" id="btn-refine">✨ Raffina idea</button>
-        <button class="btn btn-accent" id="btn-genstory">📚 Genera 9 capitoli</button>
+        <button class="btn btn-accent" id="btn-genstory">📚 Genera 10 capitoli</button>
         <button class="btn btn-cyan" id="btn-gen-cover-prompt">🖼️ Copertina storia</button>
         <div style="flex:1"></div>
         <button class="btn btn-ghost" id="btn-github-load">📥 Carica</button>
@@ -619,7 +617,7 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 const S = {
   apiKey: '',
   ghToken: '', ghOwner: '', ghRepo: '',
-  textModel: 'llama-3.3-70b-versatile',
+  textModel: 'openai/gpt-oss-120b',
   title: '', audience: '', tone: '', idea: '',
   shortVersion: '',
   chapters: []
@@ -665,8 +663,17 @@ function bindInputs() {
   tm.addEventListener('change', () => {
     S.textModel = tm.value;
     localStorage.setItem('storybook_settings', JSON.stringify({ textModel: tm.value }));
-    document.getElementById('pill-text-model').textContent = tm.value.split('-').slice(0, 2).join('-');
+    document.getElementById('pill-text-model').textContent = modelShort(tm.value);
   });
+}
+
+function modelShort(modelId) {
+  const map = {
+    'openai/gpt-oss-120b': 'gpt-oss-120b',
+    'qwen/qwen3.6-27b': 'qwen3.6-27b',
+    'llama-3.3-70b-versatile': 'llama-3.3-70b'
+  };
+  return map[modelId] || String(modelId).split('/').pop();
 }
 
 // ─────────────────────────────────────────────────────────
@@ -734,8 +741,16 @@ async function callGroqText({ prompt, temperature = 0.7, maxTokens = 3500 }) {
     })
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || 'Errore Groq');
+  if (!res.ok) throw new Error(groqError(res.status, data));
   return data.choices[0].message.content.trim();
+}
+
+function groqError(status, data) {
+  const msg = (data?.error?.message || data?.error?.code || '').toString().toLowerCase();
+  if (/invalid.*api key|unauthenticated|incorrect api key/i.test(msg)) return '⚠️ Chiave API Groq non valida: controlla la chiave nel pannello Configurazione.';
+  if (/does not exist|model.*not.*access|model.*not found/i.test(msg)) return '⚠️ Modello non disponibile su Groq. Prova a cambiarlo dal menu "Modello testo" (es. qwen/qwen3.6-27b).';
+  if (status === 429 || /rate.?limit|quota|sper|token.*limit|daily/i.test(msg)) return `⚠️ Quota Groq esaurita (i limiti si azzerano ogni giorno). Cambia modello dal menu o riprova domani.`;
+  return data?.error?.message || 'Errore Groq';
 }
 
 // ─────────────────────────────────────────────────────────
@@ -929,13 +944,13 @@ document.getElementById('btn-genstory').addEventListener('click', () => {
     const prompt1 = `Genera i primi 5 capitoli di una storia basata su: ${base}. Restituisci SOLO un array JSON: [{"number":1,"title":"...","text":"...","characters":["..."]}]`;
     const { chapters: ch1, raw: raw1 } = await generateChapterBatch(prompt1);
 
-    setStatus('status-story', 'Generazione capitoli 6–9…', 'warn');
-    const prompt2 = `Continua la storia dopo questi capitoli: ${raw1}. Genera i capitoli 6-9 (totale 4 capitoli). Stesso formato JSON array.`;
+    setStatus('status-story', 'Generazione capitoli 6–10…', 'warn');
+    const prompt2 = `Continua la storia dopo questi capitoli: ${raw1}. Genera i capitoli 6-10 (totale 5 capitoli). Stesso formato JSON array.`;
     const { chapters: ch2 } = await generateChapterBatch(prompt2);
 
     S.chapters = [...ch1, ...ch2];
     renderChapters();
-    setStatus('status-story', '9 capitoli pronti ✓', 'ok');
+    setStatus('status-story', '10 capitoli pronti ✓', 'ok');
   });
 });
 
@@ -1184,13 +1199,20 @@ window.addEventListener('load', async () => {
       const s = JSON.parse(settings);
       if (s.textModel) {
         const tm = document.getElementById('inp-textmodel');
-        tm.value = s.textModel;
-        S.textModel = s.textModel;
+        const valid = Array.from(tm.options).some(o => o.value === s.textModel);
+        const model = valid ? s.textModel : 'openai/gpt-oss-120b';
+        tm.value = model;
+        S.textModel = model;
+        document.getElementById('pill-text-model').textContent = modelShort(model);
+        if (!valid) {
+          localStorage.setItem('storybook_settings', JSON.stringify({ textModel: 'openai/gpt-oss-120b' }));
+        }
       }
     } catch {}
   }
+  document.getElementById('pill-text-model').textContent = modelShort(S.textModel);
 
-  const repoOwner = 'Zizzo91', repoName = 'Storybook';
+  const repoOwner = 'Zizzo91', repoName = 'provaStorybook';
   const paths = [
     'settings/config.json',
     `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/settings/config.json`
