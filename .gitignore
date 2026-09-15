@@ -1,0 +1,5 @@
+
+# Credenziali (Supabase/LLM — backup locale)
+settings/
+config.json
+*.backup-*

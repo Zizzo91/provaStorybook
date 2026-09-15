@@ -1,0 +1,14 @@
+[project]
+id = "gfglazxhxxplhoteaahr"
+
+[db]
+port = 5432
+shadow_port = 5433
+major_version = 15
+
+[api]
+enabled = true
+port = 5432
+schemas = ["public", "storybook", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
