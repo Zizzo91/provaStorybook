@@ -504,8 +504,6 @@ h1,h2,h3,h4{font-family:var(--font-display)}
       </div>
       <button class="btn btn-ghost btn-sm" id="btn-list-stories" style="width:100%">🔄 Aggiorna</button>
     </div>
-    <select id="inp-story-select" style="display:none"><option value="">— Seleziona —</option></select>
-    <button id="btn-cloud-load" style="display:none"></button>
   </aside>
 
   <!-- ── TOGGLE RAIL ── -->
@@ -1025,14 +1023,13 @@ async function cloudRefreshStoryList() {
     card.innerHTML = `
       <div class="story-card-title">${escapeHtml(s.title)}</div>
       <div class="story-card-meta">
-        <span>📖 ${s.chapter_count || '?'} capitoli</span>
+        <span>📖 ${s.chapter_count ?? '?'} capitoli</span>
       </div>
       <button class="story-card-del" title="Elimina">🗑️</button>
     `;
     card.addEventListener('click', e => {
       if (e.target.closest('.story-card-del')) return;
-      document.getElementById('inp-story-select').value = s.slug;
-      document.getElementById('btn-cloud-load').click();
+      loadStoryBySlug(s.slug);
     });
     card.querySelector('.story-card-del').addEventListener('click', e => {
       e.stopPropagation();
@@ -1143,12 +1140,11 @@ document.getElementById('btn-cloud-save').addEventListener('click', () => {
 });
 
 // ─────────────────────────────────────────────────────────
-// Cloud: Carica storia
+// Cloud: Carica storia — helper condiviso (gallery + legacy)
 // ─────────────────────────────────────────────────────────
-document.getElementById('btn-cloud-load').addEventListener('click', () => {
-  const slug = document.getElementById('inp-story-select').value;
+function loadStoryBySlug(slug) {
   if (!slug) { setStatus('status-story', 'Seleziona una storia dalla lista.', 'err'); return; }
-  withButton('btn-cloud-load', 'status-story', async () => {
+  withButton(null, 'status-story', async () => {
     setStatus('status-story', 'Caricamento…', 'warn');
     const data = await cloudLoadStory(slug);
     S.title = data.title || ''; S.audience = data.audience || ''; S.tone = data.tone || '';
@@ -1164,8 +1160,9 @@ document.getElementById('btn-cloud-load').addEventListener('click', () => {
     S.slug = slug;
     setStatus('status-story', 'Storia caricata ✓', 'ok');
     updateStoryStats();
+    await cloudRefreshStoryList();
   });
-});
+}
 
 // ─────────────────────────────────────────────────────────
 // Cloud: Lista storie
@@ -1176,11 +1173,6 @@ document.getElementById('btn-list-stories').addEventListener('click', async () =
     await cloudRefreshStoryList();
     setStatus('status-story', 'Lista aggiornata ✓', 'ok');
   });
-});
-
-document.getElementById('inp-story-select').addEventListener('change', () => {
-  if (document.getElementById('inp-story-select').value)
-    document.getElementById('btn-cloud-load').click();
 });
 
 // ─────────────────────────────────────────────────────────
