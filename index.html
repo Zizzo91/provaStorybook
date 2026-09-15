@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config/supabase-config.js"></script>
 <style>
 :root{
   --bg:#080c14;
@@ -405,6 +407,23 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   .toggle-btn{position:static;height:28px}
   .main{padding:18px 16px 40px}
 }
+/* ── LOGIN OVERLAY ── */
+#loginScreen{position:fixed;inset:0;background:rgba(8,12,20,0.96);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(6px)}
+#loginScreen.hidden{display:none!important}
+.login-card{background:var(--surface2);border:1px solid var(--glass-border);border-radius:1.25rem;box-shadow:0 25px 50px -12px rgba(0,0,0,0.6);padding:2rem;width:100%;max-width:360px;text-align:center}
+.pin-dots{display:flex;justify-content:center;gap:0.75rem;margin-bottom:1.25rem}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--faint);background:transparent;transition:all .15s}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent);transform:scale(1.2)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin-bottom:0.75rem}
+.pin-btn{height:56px;border-radius:0.75rem;border:1px solid var(--faint);background:var(--surface3);font-size:1.35rem;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;font-family:var(--font-body)}
+.pin-btn:hover{background:var(--glow-accent);border-color:var(--accent);transform:translateY(-1px)}
+.pin-btn:active{transform:scale(0.97)}
+/* ── CLOUD BADGE ── */
+.cloud-badge{padding:4px 11px;border-radius:999px;font-size:11.5px;display:inline-flex;align-items:center;gap:5px}
+.cloud-badge.online{background:rgba(45,204,111,0.12);border:1px solid rgba(45,204,111,0.3);color:var(--green)}
+.cloud-badge.offline{background:var(--glass);border:1px solid var(--glass-border);color:var(--muted)}
+.btn-logout{background:transparent;border:1px solid var(--faint);color:var(--muted);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;cursor:pointer;transition:all .15s;font-family:var(--font-body);display:inline-flex;align-items:center;gap:5px}
+.btn-logout:hover{border-color:var(--red);color:var(--red);background:rgba(232,86,78,0.1)}
 </style>
 </head>
 <body>
@@ -419,6 +438,8 @@ h1,h2,h3,h4{font-family:var(--font-display)}
     <span class="pill accent" id="pill-text-model">gpt-oss-120b</span>
     <span class="pill" id="pill-provider">Groq</span>
     <span class="pill">Pollinations.AI</span>
+    <span class="cloud-badge offline" id="cloudStatus">● Offline</span>
+    <button class="btn-logout" id="logoutBtn" style="display:none" onclick="doLogout()">🚪 Esci</button>
   </div>
 </header>
 
@@ -427,7 +448,7 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   <!-- ── SIDEBAR ── -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-section">
-      <div class="sidebar-label">⚙️ Configurazione AI</div>
+      <div class="sidebar-label">⚙️ Modello AI</div>
       <div class="field">
         <label>Modello testo</label>
         <select id="inp-textmodel">
@@ -435,26 +456,16 @@ h1,h2,h3,h4{font-family:var(--font-display)}
           <option value="qwen/qwen3.6-27b">qwen/qwen3.6-27b</option>
         </select>
       </div>
-      <div class="field">
-        <label>Groq API Key</label>
-        <input type="password" id="inp-apikey" placeholder="gsk_…">
-      </div>
     </div>
 
     <div class="divider"></div>
 
     <div class="sidebar-section">
-      <div class="sidebar-label">🐙 GitHub</div>
-      <div class="field">
-        <label>Token</label>
-        <input type="password" id="inp-gh-token" placeholder="ghp_…">
+      <div class="sidebar-label">☁️ Cloud (Supabase)</div>
+      <div id="cloudUserInfo" style="font-size:12.5px;color:var(--text-soft);display:none"></div>
+      <div id="cloudLoginInfo" style="font-size:12.5px;color:var(--muted)">
+        Effettua il login con il PIN per salvare le storie nel cloud.
       </div>
-      <div class="row2">
-        <div class="field"><label>Owner</label><input type="text" id="inp-gh-owner" placeholder="Zizzo91"></div>
-        <div class="field"><label>Repo</label><input type="text" id="inp-gh-repo" placeholder="Storybook"></div>
-      </div>
-      <button class="btn btn-ghost btn-sm" id="btn-save-keys" style="width:100%">💾 Salva credenziali</button>
-      <div id="status-settings" class="status"></div>
     </div>
 
     <div class="divider"></div>
@@ -467,7 +478,8 @@ h1,h2,h3,h4{font-family:var(--font-display)}
         </select>
       </div>
       <div class="btn-group">
-        <button class="btn btn-ghost btn-sm" id="btn-list-stories" style="flex:1">📋 Lista</button>
+        <button class="btn btn-accent btn-sm" id="btn-cloud-load" style="flex:1">📥 Carica</button>
+        <button class="btn btn-ghost btn-sm" id="btn-list-stories">📋</button>
         <button class="btn btn-red btn-sm" id="btn-delete-story">🗑️</button>
       </div>
     </div>
@@ -511,9 +523,8 @@ h1,h2,h3,h4{font-family:var(--font-display)}
         <button class="btn btn-ghost" id="btn-refine">✨ Raffina idea</button>
         <button class="btn btn-accent" id="btn-genstory">📚 Genera 10 capitoli</button>
         <button class="btn btn-cyan" id="btn-gen-cover-prompt">🖼️ Copertina storia</button>
+        <button class="btn btn-green" id="btn-cloud-save">📤 Salva</button>
         <div style="flex:1"></div>
-        <button class="btn btn-ghost" id="btn-github-load">📥 Carica</button>
-        <button class="btn btn-green" id="btn-github-save">📤 Salva</button>
       </div>
       <div id="status-story" class="status"></div>
     </div>
@@ -596,6 +607,36 @@ h1,h2,h3,h4{font-family:var(--font-display)}
    </main>
 </div>
 
+<div id="loginScreen">
+  <div class="login-card">
+    <h2 id="loginTitle" style="margin:0;font-size:1.2rem;font-weight:700;color:var(--text)">Accesso protetto</h2>
+    <p style="margin:0.25rem 0 1rem;color:var(--muted);font-size:0.9rem">Inserisci il PIN a 6 cifre</p>
+    <div class="pin-dots" id="loginDots">
+      <div class="pin-dot" id="ldot0"></div>
+      <div class="pin-dot" id="ldot1"></div>
+      <div class="pin-dot" id="ldot2"></div>
+      <div class="pin-dot" id="ldot3"></div>
+      <div class="pin-dot" id="ldot4"></div>
+      <div class="pin-dot" id="ldot5"></div>
+    </div>
+    <div id="loginError" style="color:var(--red);font-size:0.85rem;font-weight:600;margin-bottom:0.7rem;display:none"></div>
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinPad('1')">1</button>
+      <button class="pin-btn" onclick="pinPad('2')">2</button>
+      <button class="pin-btn" onclick="pinPad('3')">3</button>
+      <button class="pin-btn" onclick="pinPad('4')">4</button>
+      <button class="pin-btn" onclick="pinPad('5')">5</button>
+      <button class="pin-btn" onclick="pinPad('6')">6</button>
+      <button class="pin-btn" onclick="pinPad('7')">7</button>
+      <button class="pin-btn" onclick="pinPad('8')">8</button>
+      <button class="pin-btn" onclick="pinPad('9')">9</button>
+      <button class="pin-btn" style="color:var(--muted)" onclick="pinPadClear()">✕</button>
+      <button class="pin-btn" onclick="pinPad('0')">0</button>
+      <button class="pin-btn" style="color:var(--muted)" onclick="pinPadBackspace()">⌫</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Sidebar toggle ──
 (function () {
@@ -616,7 +657,6 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 // ─────────────────────────────────────────────────────────
 const S = {
   apiKey: '',
-  ghToken: '', ghOwner: '', ghRepo: '',
   textModel: 'openai/gpt-oss-120b',
   title: '', audience: '', tone: '', idea: '',
   shortVersion: '',
@@ -625,8 +665,6 @@ const S = {
 
 // ─────────────────────────────────────────────────────────
 // OTTIMIZZAZIONE 1 — withButton
-// Wrapper async che gestisce automaticamente disabled/re-enable
-// ed eventuali errori, eliminando il pattern try/finally ripetuto.
 // ─────────────────────────────────────────────────────────
 async function withButton(btnId, statusId, fn) {
   const btn = document.getElementById(btnId);
@@ -641,14 +679,10 @@ async function withButton(btnId, statusId, fn) {
 }
 
 // ─────────────────────────────────────────────────────────
-// Listener reattivi: S si aggiorna al cambiamento del campo.
+// Listener reattivi
 // ─────────────────────────────────────────────────────────
 function bindInputs() {
   const bindings = [
-    ['inp-apikey',   v => { S.apiKey   = v; localStorage.setItem('storybook_apikey',    v); }],
-    ['inp-gh-token', v => { S.ghToken  = v; localStorage.setItem('storybook_gh_token',  v); }],
-    ['inp-gh-owner', v => { S.ghOwner  = v; localStorage.setItem('storybook_gh_owner',  v); }],
-    ['inp-gh-repo',  v => { S.ghRepo   = v; localStorage.setItem('storybook_gh_repo',   v); }],
     ['inp-title',    v => { S.title    = v; }],
     ['inp-audience', v => { S.audience = v; }],
     ['inp-tone',     v => { S.tone     = v; }],
@@ -677,19 +711,215 @@ function modelShort(modelId) {
 }
 
 // ─────────────────────────────────────────────────────────
-// OTTIMIZZAZIONE 2 — strToBase64 con reduce (più performante)
-// Evita la concatenazione O(n²) del loop forEach.
+// SUPABASE CLIENT + AUTH
 // ─────────────────────────────────────────────────────────
-function strToBase64(str) {
-  const bytes = new TextEncoder().encode(str);
-  const bin = Array.from(bytes).reduce((acc, b) => acc + String.fromCharCode(b), '');
-  return btoa(bin);
+const SCHEMA = 'storybook';
+let supabaseClient = null;
+
+function getSupabase() {
+  if (supabaseClient) return supabaseClient;
+  const cfg = window.SUPABASE_CONFIG;
+  if (!cfg || !window.supabase || !window.supabase.createClient) return null;
+  supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey, {
+    auth: { persistSession: true, autoRefreshToken: true }
+  });
+  return supabaseClient;
 }
-function base64ToStr(b64) {
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return new TextDecoder().decode(bytes);
+
+async function getSession() {
+  const sdk = getSupabase();
+  if (!sdk) return null;
+  try { const { data } = await sdk.auth.getSession(); return data.session || null; }
+  catch { return null; }
+}
+
+function setCloudStatus(state, msg) {
+  const el = document.getElementById('cloudStatus');
+  if (!el) return;
+  el.className = 'cloud-badge ' + state;
+  el.textContent = '● ' + msg;
+}
+
+// ── PIN LOGIN ──
+const PIN_LEN = 6;
+let pinBuffer = '';
+function pinPad(d) {
+  if (pinBuffer.length >= PIN_LEN) return;
+  pinBuffer += d;
+  updateLoginDots();
+  if (pinBuffer.length === PIN_LEN) setTimeout(() => doPinLogin(), 180);
+}
+function pinPadBackspace() { pinBuffer = pinBuffer.slice(0, -1); updateLoginDots(); }
+function pinPadClear() { pinBuffer = ''; updateLoginDots(); hideLoginError(); }
+
+document.addEventListener('keydown', (e) => {
+  const ls = document.getElementById('loginScreen');
+  if (!ls || ls.classList.contains('hidden')) return;
+  if (e.key >= '0' && e.key <= '9') { e.preventDefault(); pinPad(e.key); }
+  else if (e.key === 'Backspace') { e.preventDefault(); pinPadBackspace(); }
+  else if (e.key === 'Delete') { e.preventDefault(); pinPadClear(); }
+  else if (e.key === 'Escape') { e.preventDefault(); pinPadClear(); }
+  else if (e.key === 'Enter') { if (pinBuffer.length === PIN_LEN) doPinLogin(); }
+});
+
+function updateLoginDots() {
+  for (let i = 0; i < PIN_LEN; i++) {
+    const el = document.getElementById('ldot' + i);
+    if (el) el.classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+function showLoginError(m) {
+  const el = document.getElementById('loginError');
+  if (el) { el.textContent = m; el.style.display = 'block'; }
+}
+function hideLoginError() {
+  const el = document.getElementById('loginError');
+  if (el) el.style.display = 'none';
+}
+function setLoginBusy(b) {
+  const el = document.getElementById('loginTitle');
+  if (el) el.textContent = b ? 'Verifica...' : 'Accesso protetto';
+  hideLoginError();
+}
+
+async function doPinLogin() {
+  const sdk = getSupabase();
+  const cfg = window.SUPABASE_CONFIG;
+  const email = (cfg && cfg.pinEmail || '').trim().toLowerCase();
+  if (!email) { showLoginError('Config mancante (pinEmail).'); return; }
+  if (!sdk) { showLoginError('SDK non disponibile.'); return; }
+  const password = pinBuffer;
+  pinBuffer = '';
+  updateLoginDots();
+  setLoginBusy(true);
+  try {
+    let { data, error } = await sdk.auth.signInWithPassword({ email, password });
+    if (error && /invalid login credentials/i.test(error.message || '')) {
+      const su = await sdk.auth.signUp({ email, password });
+      if (su.error) {
+        setLoginBusy(false);
+        const m = (su.error.message || '').toLowerCase();
+        if (/rate limit|troppi tentativi/i.test(m)) showLoginError('Limite Supabase: riprova tra ~1h con stesso PIN.');
+        else if (/already registered/i.test(m)) showLoginError('PIN errato.');
+        else showLoginError(su.error.message || 'Errore');
+        return;
+      }
+      if (!su.data || !su.data.session) { setLoginBusy(false); showLoginError('Account creato: conferma email poi riprova.'); return; }
+      data = su.data;
+    }
+    if (error) { setLoginBusy(false); showLoginError(error.message || 'Errore'); return; }
+    await applyAuthUI();
+    await loadCloudSettings();
+    await cloudRefreshStoryList();
+    setStatus('status-settings', 'Accesso riuscito ✓', 'ok');
+  } catch (e) { setLoginBusy(false); showLoginError(e.message || 'Errore'); }
+}
+
+async function doLogout() {
+  const sdk = getSupabase();
+  try { if (sdk) await sdk.auth.signOut(); } catch {}
+  location.reload();
+}
+
+async function applyAuthUI() {
+  const session = await getSession();
+  const authed = !!session;
+  const ls = document.getElementById('loginScreen');
+  const lo = document.getElementById('logoutBtn');
+  const ci = document.getElementById('cloudUserInfo');
+  const cl = document.getElementById('cloudLoginInfo');
+  if (ls) ls.classList.toggle('hidden', authed);
+  if (lo) lo.style.display = authed ? 'inline-flex' : 'none';
+  if (ci) ci.style.display = authed ? 'block' : 'none';
+  if (cl) cl.style.display = authed ? 'none' : 'block';
+  if (authed) {
+    setCloudStatus('online', 'Cloud collegato');
+    if (ci) ci.textContent = session.user.email || '';
+  } else {
+    setCloudStatus('offline', 'Offline — effettua login');
+  }
+  return authed;
+}
+
+// ── Cloud settings load (Groq key from Supabase) ──
+async function loadCloudSettings() {
+  const session = await getSession();
+  if (!session) return;
+  const sdk = getSupabase();
+  if (!sdk) return;
+  try {
+    const { data, error } = await sdk.schema(SCHEMA).from('settings')
+      .select('groq_api_key').eq('user_id', session.user.id).maybeSingle();
+    if (!error && data && data.groq_api_key) S.apiKey = data.groq_api_key;
+  } catch {}
+}
+
+// ── Cloud stories CRUD ──
+async function cloudListStories() {
+  const session = await getSession();
+  if (!session) return [];
+  const sdk = getSupabase();
+  if (!sdk) return [];
+  const { data, error } = await sdk.schema(SCHEMA).from('stories')
+    .select('slug,title').order('updated_at', { ascending: false });
+  if (error) return [];
+  return data || [];
+}
+
+async function cloudSaveStory(story) {
+  const session = await getSession();
+  if (!session) throw new Error('Effettua il login prima di salvare.');
+  const sdk = getSupabase();
+  if (!sdk) throw new Error('SDK non disponibile.');
+  const slug = (story.title || 'storia-senza-titolo').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const row = {
+    user_id: session.user.id, slug,
+    title: story.title, audience: story.audience, tone: story.tone,
+    idea: story.idea, short_version: story.shortVersion,
+    chapters: story.chapters.map(ch => ({ number: ch.number, title: ch.title, text: ch.text, characters: ch.characters }))
+  };
+  const { error } = await sdk.schema(SCHEMA).from('stories')
+    .upsert(row, { onConflict: 'user_id,slug' });
+  if (error) throw new Error(error.message || 'Errore salvataggio cloud');
+  return slug;
+}
+
+async function cloudLoadStory(slug) {
+  const session = await getSession();
+  if (!session) throw new Error('Effettua il login per caricare storie.');
+  const sdk = getSupabase();
+  if (!sdk) throw new Error('SDK non disponibile.');
+  const { data, error } = await sdk.schema(SCHEMA).from('stories')
+    .select('*').eq('user_id', session.user.id).eq('slug', slug).maybeSingle();
+  if (error) throw new Error(error.message || 'Errore caricamento');
+  if (!data) throw new Error('Storia non trovata.');
+  return data;
+}
+
+async function cloudDeleteStory(slug) {
+  const session = await getSession();
+  if (!session) throw new Error('Effettua il login per eliminare.');
+  const sdk = getSupabase();
+  if (!sdk) throw new Error('SDK non disponibile.');
+  const { error } = await sdk.schema(SCHEMA).from('stories')
+    .delete().eq('user_id', session.user.id).eq('slug', slug);
+  if (error) throw new Error(error.message || 'Errore eliminazione');
+}
+
+async function cloudRefreshStoryList() {
+  const stories = await cloudListStories();
+  const selects = ['inp-story-select', 'inp-combine-story-1', 'inp-combine-story-2'];
+  for (const id of selects) {
+    const sel = document.getElementById(id);
+    if (!sel) continue;
+    sel.innerHTML = '<option value="">— Seleziona storia —</option>';
+    stories.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.slug;
+      opt.textContent = s.title;
+      sel.appendChild(opt);
+    });
+  }
 }
 
 // ─────────────────────────────────────────────────────────
@@ -755,8 +985,6 @@ function groqError(status, data) {
 
 // ─────────────────────────────────────────────────────────
 // OTTIMIZZAZIONE 3 — generateChapterBatch
-// Astrae la chiamata Groq + parsing JSON per un batch di capitoli.
-// Include retry automatico (1 tentativo) se il JSON è malformato.
 // ─────────────────────────────────────────────────────────
 async function generateChapterBatch(prompt, retries = 1) {
   const raw = await callGroqText({ prompt });
@@ -764,7 +992,6 @@ async function generateChapterBatch(prompt, retries = 1) {
     return { chapters: extractJson(raw), raw };
   } catch (e) {
     if (retries > 0) {
-      // Retry: chiede esplicitamente JSON puro
       const retryPrompt = `Il tuo output precedente non era JSON valido. Rispondi SOLO con il JSON richiesto, senza testo aggiuntivo.\n\nPrompt originale:\n${prompt}`;
       const retryRaw = await callGroqText({ prompt: retryPrompt });
       return { chapters: extractJson(retryRaw), raw: retryRaw };
@@ -774,85 +1001,37 @@ async function generateChapterBatch(prompt, retries = 1) {
 }
 
 // ─────────────────────────────────────────────────────────
-// GitHub helpers
+// Cloud: Salva storia
 // ─────────────────────────────────────────────────────────
-function ghBase() {
-  return `https://api.github.com/repos/${S.ghOwner}/${S.ghRepo}/contents`;
-}
-function ghHeaders(extra = {}) {
-  return { 'Authorization': `token ${S.ghToken}`, 'Accept': 'application/vnd.github.v3+json', ...extra };
-}
-async function ghGet(path) {
-  const res = await fetch(ghBase() + path, { headers: ghHeaders() });
-  if (!res.ok) throw new Error(res.status === 404 ? 'File non trovato' : 'Errore GitHub: ' + res.status);
-  return res.json();
-}
-async function ghPut(path, content, sha, message) {
-  const body = { message, content: strToBase64(content) };
-  if (sha) body.sha = sha;
-  const res = await fetch(ghBase() + path, {
-    method: 'PUT',
-    headers: ghHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Errore salvataggio'); }
-  return res.json();
-}
-async function ghDelete(path, sha, message) {
-  const res = await fetch(ghBase() + path, {
-    method: 'DELETE',
-    headers: ghHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ message, sha })
-  });
-  if (!res.ok) throw new Error('Errore eliminazione');
-}
-async function ghList(path) {
-  const res = await fetch(ghBase() + path, { headers: ghHeaders() });
-  if (res.status === 401 || res.status === 403) throw new Error('Token non valido o senza permessi.');
-  if (!res.ok) throw new Error(res.status === 404 ? 'Nessuna storia salvata' : 'Errore: ' + res.status);
-  return res.json();
-}
-
-// ─────────────────────────────────────────────────────────
-// GitHub: Salva storia
-// ─────────────────────────────────────────────────────────
-document.getElementById('btn-github-save').addEventListener('click', () => {
-  if (!S.ghToken || !S.ghOwner || !S.ghRepo) { setStatus('status-story', 'Inserisci GitHub Token, Owner e Repo.', 'err'); return; }
-  withButton('btn-github-save', 'status-story', async () => {
-    setStatus('status-story', 'Salvataggio su GitHub…', 'warn');
-    const slug = (S.title || 'storia-senza-titolo').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
-    const filePath = `/stories/${slug}.json`;
-    const storyData = {
+document.getElementById('btn-cloud-save').addEventListener('click', () => {
+  if (!S.title) { setStatus('status-story', 'Nessuna storia in corso.', 'err'); return; }
+  withButton('btn-cloud-save', 'status-story', async () => {
+    setStatus('status-story', 'Salvataggio su cloud…', 'warn');
+    const slug = await cloudSaveStory({
       title: S.title, audience: S.audience, tone: S.tone,
-      idea: S.idea, shortVersion: S.shortVersion,
-      chapters: S.chapters.map(ch => ({ number: ch.number, title: ch.title, text: ch.text, characters: ch.characters })),
-      timestamp: new Date().toISOString()
-    };
-    let sha = '';
-    try { const existing = await ghGet(filePath); sha = existing.sha; } catch {}
-    await ghPut(filePath, JSON.stringify(storyData, null, 2), sha, `Save story: ${S.title}`);
-    setStatus('status-story', 'Storia salvata su GitHub ✓', 'ok');
+      idea: S.idea, shortVersion: S.shortVersion, chapters: S.chapters
+    });
+    await cloudRefreshStoryList();
+    setStatus('status-story', `Storia salvata ✓ (${slug})`, 'ok');
   });
 });
 
 // ─────────────────────────────────────────────────────────
-// GitHub: Carica storia
+// Cloud: Carica storia
 // ─────────────────────────────────────────────────────────
-document.getElementById('btn-github-load').addEventListener('click', () => {
-  if (!S.ghToken || !S.ghOwner || !S.ghRepo) { setStatus('status-story', 'GitHub non configurato.', 'err'); return; }
-  const storyName = document.getElementById('inp-story-select').value
-    || S.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
-  if (!storyName) { setStatus('status-story', 'Seleziona una storia.', 'err'); return; }
-  withButton('btn-github-load', 'status-story', async () => {
+document.getElementById('btn-cloud-load').addEventListener('click', () => {
+  const slug = document.getElementById('inp-story-select').value;
+  if (!slug) { setStatus('status-story', 'Seleziona una storia dalla lista.', 'err'); return; }
+  withButton('btn-cloud-load', 'status-story', async () => {
     setStatus('status-story', 'Caricamento…', 'warn');
-    const data = await ghGet(`/stories/${storyName}.json`);
-    const json = JSON.parse(base64ToStr(data.content.replace(/\n/g, '')));
-    S.title = json.title; S.audience = json.audience; S.tone = json.tone;
-    S.idea = json.idea; S.shortVersion = json.shortVersion; S.chapters = json.chapters || [];
-    document.getElementById('inp-title').value    = S.title    || '';
-    document.getElementById('inp-audience').value = S.audience || '';
-    document.getElementById('inp-tone').value     = S.tone     || '';
-    document.getElementById('inp-idea').value     = S.idea     || '';
+    const data = await cloudLoadStory(slug);
+    S.title = data.title || ''; S.audience = data.audience || ''; S.tone = data.tone || '';
+    S.idea = data.idea || ''; S.shortVersion = data.short_version || '';
+    S.chapters = data.chapters || [];
+    document.getElementById('inp-title').value = S.title;
+    document.getElementById('inp-audience').value = S.audience;
+    document.getElementById('inp-tone').value = S.tone;
+    document.getElementById('inp-idea').value = S.idea;
     document.getElementById('short-story-box').textContent = S.shortVersion || 'Nessun testo.';
     renderChapters();
     setStatus('status-story', 'Storia caricata ✓', 'ok');
@@ -860,60 +1039,34 @@ document.getElementById('btn-github-load').addEventListener('click', () => {
 });
 
 // ─────────────────────────────────────────────────────────
-// GitHub: Lista storie (popola tutti e 3 i dropdown)
+// Cloud: Lista storie
 // ─────────────────────────────────────────────────────────
-function populateStorySelect(selectId, jsonFiles) {
-  const select = document.getElementById(selectId);
-  select.innerHTML = '<option value="">— Seleziona storia —</option>';
-  jsonFiles.forEach(f => {
-    const opt = document.createElement('option');
-    opt.value = f.name.replace('.json', '');
-    opt.textContent = f.name.replace('.json', '');
-    select.appendChild(opt);
-  });
-}
-
-document.getElementById('btn-list-stories').addEventListener('click', () => {
-  if (!S.ghToken || !S.ghOwner || !S.ghRepo) { setStatus('status-story', 'Inserisci GitHub Token, Owner e Repo.', 'err'); return; }
+document.getElementById('btn-list-stories').addEventListener('click', async () => {
   withButton('btn-list-stories', 'status-story', async () => {
     setStatus('status-story', 'Carico lista…', 'warn');
-    const files = await ghList('/stories');
-    const jsonFiles = files.filter(f => f.name.endsWith('.json'));
-    populateStorySelect('inp-story-select', jsonFiles);
-    populateStorySelect('inp-combine-story-1', jsonFiles);
-    populateStorySelect('inp-combine-story-2', jsonFiles);
-    setStatus('status-story', `${jsonFiles.length} storie trovate.`, 'ok');
+    await cloudRefreshStoryList();
+    setStatus('status-story', 'Lista aggiornata ✓', 'ok');
   });
 });
 
 document.getElementById('inp-story-select').addEventListener('change', () => {
   if (document.getElementById('inp-story-select').value)
-    document.getElementById('btn-github-load').click();
+    document.getElementById('btn-cloud-load').click();
 });
 
 // ─────────────────────────────────────────────────────────
-// GitHub: Elimina storia
+// Cloud: Elimina storia
 // ─────────────────────────────────────────────────────────
 document.getElementById('btn-delete-story').addEventListener('click', () => {
-  if (!S.ghToken || !S.ghOwner || !S.ghRepo) { setStatus('status-story', 'GitHub non configurato.', 'err'); return; }
   const storyName = document.getElementById('inp-story-select').value;
   if (!storyName) { setStatus('status-story', 'Seleziona una storia da eliminare.', 'err'); return; }
   if (!confirm(`Eliminare "${storyName}"?`)) return;
   withButton('btn-delete-story', 'status-story', async () => {
     setStatus('status-story', 'Eliminazione…', 'warn');
-    const fileData = await ghGet(`/stories/${storyName}.json`);
-    await ghDelete(`/stories/${storyName}.json`, fileData.sha, `Delete story: ${storyName}`);
+    await cloudDeleteStory(storyName);
+    await cloudRefreshStoryList();
     setStatus('status-story', 'Storia eliminata ✓', 'ok');
-    document.getElementById('btn-list-stories').click();
   });
-});
-
-// ─────────────────────────────────────────────────────────
-// Salva credenziali (manuale)
-// ─────────────────────────────────────────────────────────
-document.getElementById('btn-save-keys').addEventListener('click', () => {
-  if (!S.apiKey && !S.ghToken) { setStatus('status-settings', 'Inserisci almeno una chiave.', 'err'); return; }
-  setStatus('status-settings', 'Credenziali salvate ✓', 'ok');
 });
 
 // ─────────────────────────────────────────────────────────
@@ -933,7 +1086,7 @@ document.getElementById('btn-refine').addEventListener('click', () => {
 });
 
 // ─────────────────────────────────────────────────────────
-// Genera capitoli (usa generateChapterBatch)
+// Genera capitoli
 // ─────────────────────────────────────────────────────────
 document.getElementById('btn-genstory').addEventListener('click', () => {
   withButton('btn-genstory', 'status-story', async () => {
@@ -1072,12 +1225,10 @@ NON inserire testi o scritte nell'immagine.`;
 }
 
 // ─────────────────────────────────────────────────────────
-// OTTIMIZZAZIONE 4 — fetchStoryFromGitHub
-// Carica il JSON di una storia dal repo GitHub.
+// Fetch story from cloud (replaces fetchStoryFromGitHub)
 // ─────────────────────────────────────────────────────────
-async function fetchStoryFromGitHub(storyName) {
-  const data = await ghGet(`/stories/${storyName}.json`);
-  return JSON.parse(base64ToStr(data.content.replace(/\n/g, '')));
+async function fetchStoryFromCloud(slug) {
+  return await cloudLoadStory(slug);
 }
 
 // ─────────────────────────────────────────────────────────
@@ -1091,8 +1242,8 @@ document.getElementById('btn-gen-combined-title').addEventListener('click', () =
   withButton('btn-gen-combined-title', 'status-combined', async () => {
     setStatus('status-combined', 'Carico storie e genero titolo…', 'warn');
     const [story1, story2] = await Promise.all([
-      fetchStoryFromGitHub(s1),
-      fetchStoryFromGitHub(s2)
+      fetchStoryFromCloud(s1),
+      fetchStoryFromCloud(s2)
     ]);
     const prompt = `Ho due storie per bambini:
 1) Titolo: "${story1.title}"
@@ -1121,8 +1272,8 @@ document.getElementById('btn-gen-combined-cover').addEventListener('click', () =
   withButton('btn-gen-combined-cover', 'status-combined', async () => {
     setStatus('status-combined', 'Carico storie e genero prompt…', 'warn');
     const [story1, story2] = await Promise.all([
-      fetchStoryFromGitHub(s1),
-      fetchStoryFromGitHub(s2)
+      fetchStoryFromCloud(s1),
+      fetchStoryFromCloud(s2)
     ]);
     const chars1 = [...new Set(story1.chapters?.flatMap(c => c.characters || []) || [])].join(', ');
     const chars2 = [...new Set(story2.chapters?.flatMap(c => c.characters || []) || [])].join(', ');
@@ -1176,69 +1327,42 @@ Il prompt deve descrivere una copertina che rappresenti la storia in modo accatt
 // Inizializzazione
 // ─────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
+  const oldKeys = ['storybook_apikey','storybook_gh_token','storybook_gh_owner','storybook_gh_repo','storybook_settings'];
+  const backup = {};
+  for (const k of oldKeys) {
+    const v = localStorage.getItem(k);
+    if (v) backup[k] = v;
+  }
+  if (Object.keys(backup).length > 0) {
+    localStorage.setItem('storybook_backup_' + Date.now(), JSON.stringify(backup));
+    for (const k of oldKeys) localStorage.removeItem(k);
+  }
+
   bindInputs();
 
-  const fromLS = [
-    ['inp-apikey',   'storybook_apikey'],
-    ['inp-gh-token', 'storybook_gh_token'],
-    ['inp-gh-owner', 'storybook_gh_owner'],
-    ['inp-gh-repo',  'storybook_gh_repo'],
-  ];
-  fromLS.forEach(([id, key]) => {
-    const val = localStorage.getItem(key);
-    if (val) {
-      const el = document.getElementById(id);
-      el.value = val;
-      el.dispatchEvent(new Event('input'));
-    }
-  });
-
   const settings = localStorage.getItem('storybook_settings');
+  const validModels = ['openai/gpt-oss-120b', 'qwen/qwen3.6-27b'];
   if (settings) {
     try {
       const s = JSON.parse(settings);
       if (s.textModel) {
         const tm = document.getElementById('inp-textmodel');
-        const valid = Array.from(tm.options).some(o => o.value === s.textModel);
-        const model = valid ? s.textModel : 'openai/gpt-oss-120b';
+        const model = validModels.includes(s.textModel) ? s.textModel : 'openai/gpt-oss-120b';
         tm.value = model;
         S.textModel = model;
-        document.getElementById('pill-text-model').textContent = modelShort(model);
-        if (!valid) {
-          localStorage.setItem('storybook_settings', JSON.stringify({ textModel: 'openai/gpt-oss-120b' }));
-        }
+        localStorage.setItem('storybook_settings', JSON.stringify({ textModel: model }));
       }
     } catch {}
   }
   document.getElementById('pill-text-model').textContent = modelShort(S.textModel);
 
-  const repoOwner = 'Zizzo91', repoName = 'provaStorybook';
-  const paths = [
-    'settings/config.json',
-    `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/settings/config.json`
-  ];
-  for (const p of paths) {
-    try {
-      const res = await fetch(p);
-      if (res.ok) {
-        const d = await res.json();
-        const map = [
-          ['inp-apikey',   d.groq,        'storybook_apikey'],
-          ['inp-gh-token', d.githubToken, 'storybook_gh_token'],
-          ['inp-gh-owner', d.githubOwner, 'storybook_gh_owner'],
-          ['inp-gh-repo',  d.githubRepo,  'storybook_gh_repo'],
-        ];
-        map.forEach(([id, val, lsKey]) => {
-          if (val && !localStorage.getItem(lsKey)) {
-            const el = document.getElementById(id);
-            el.value = val;
-            el.dispatchEvent(new Event('input'));
-          }
-        });
-        setStatus('status-settings', 'Configurazione caricata ✓', 'ok');
-        break;
-      }
-    } catch {}
+  const session = await getSession();
+  if (session) {
+    await applyAuthUI();
+    await loadCloudSettings();
+    await cloudRefreshStoryList();
+  } else {
+    setCloudStatus('offline', 'Offline — effettua login');
   }
 });
 </script>
