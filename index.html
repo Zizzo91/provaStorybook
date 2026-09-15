@@ -480,7 +480,7 @@ h1,h2,h3,h4{font-family:var(--font-display)}
         <label>Modello testo</label>
         <select id="inp-textmodel">
           <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
-          <option value="qwen/qwen3.6-27b">qwen/qwen3.6-27b</option>
+          <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b</option>
         </select>
       </div>
     </div>
@@ -727,7 +727,7 @@ function bindInputs() {
 function modelShort(modelId) {
   const map = {
     'openai/gpt-oss-120b': 'gpt-oss-120b',
-    'qwen/qwen3.6-27b': 'qwen3.6-27b'
+    'qwen/qwen3.8-27b': 'qwen3.8-27b'
   };
   return map[modelId] || String(modelId).split('/').pop();
 }
@@ -1099,7 +1099,7 @@ async function callGroqText({ prompt, temperature = 0.7, maxTokens = 3500 }) {
 function groqError(status, data) {
   const msg = (data?.error?.message || data?.error?.code || '').toString().toLowerCase();
   if (/invalid.*api key|unauthenticated|incorrect api key/i.test(msg)) return '⚠️ Chiave API Groq non valida: controlla la chiave nel pannello Configurazione.';
-  if (/does not exist|model.*not.*access|model.*not found/i.test(msg)) return '⚠️ Modello non disponibile su Groq. Prova a cambiarlo dal menu "Modello testo" (es. qwen/qwen3.6-27b).';
+  if (/does not exist|model.*not.*access|model.*not found/i.test(msg)) return '⚠️ Modello non disponibile su Groq. Prova a cambiarlo dal menu "Modello testo" (es. qwen/qwen3.8-27b).';
   if (status === 429 || /rate.?limit|quota|sper|token.*limit|daily/i.test(msg)) return `⚠️ Quota Groq esaurita (i limiti si azzerano ogni giorno). Cambia modello dal menu o riprova domani.`;
   return data?.error?.message || 'Errore Groq';
 }
@@ -1450,11 +1450,12 @@ window.addEventListener('load', async () => {
   const draftRestored = loadDraft();
 
   const settings = localStorage.getItem('storybook_settings');
-  const validModels = ['openai/gpt-oss-120b', 'qwen/qwen3.6-27b'];
+  const validModels = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
   if (settings) {
     try {
       const s = JSON.parse(settings);
       if (s.textModel) {
+        if (s.textModel === 'qwen/qwen3.6-27b') s.textModel = 'qwen/qwen3.8-27b';
         const tm = document.getElementById('inp-textmodel');
         const model = validModels.includes(s.textModel) ? s.textModel : 'openai/gpt-oss-120b';
         tm.value = model;
