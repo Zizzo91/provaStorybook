@@ -1183,7 +1183,20 @@ document.getElementById('btn-refine').addEventListener('click', () => {
   withButton('btn-refine', 'status-story', async () => {
     setStatus('status-story', 'Raffinamento in corso…', 'warn');
     const res = await callGroqText({
-      prompt: `Raffina questa idea per una storia: ${S.idea}. Target: ${S.audience}. Tono: ${S.tone}. Restituisci circa 150 parole in italiano.`
+      prompt: `Sei un editor di storie per bambini 4-8 anni. Raffina l'idea grezza in una sinossi pronta per 10 capitoli.
+
+Idea grezza: "${S.idea}"
+Target: ${S.audience || 'bambini 4-8 anni'}
+Tono: ${S.tone || 'dolce e avventuroso'}
+
+Requisiti:
+- 130-170 parole, italiano, 2-3 paragrafi brevi, prosa continua
+- Mantieni cuore dell'idea e personaggi; aggiungi 1 piccolo conflitto + risoluzione positiva
+- Frasi brevi, lessico semplice, adatto a lettura ad alta voce
+- Fissa protagonista, ambientazione, obiettivo chiaro per garantire coerenza dei 10 capitoli
+- Rispondi SOLO con il testo raffinato, senza titoli, elenchi, virgolette o frasi tipo "Ecco la storia…"`,
+      temperature: 0.5,
+      maxTokens: 500
     });
     S.shortVersion = res;
     document.getElementById('short-story-box').textContent = res;
