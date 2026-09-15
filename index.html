@@ -690,14 +690,14 @@ const S = {
 // OTTIMIZZAZIONE 1 — withButton
 // ─────────────────────────────────────────────────────────
 async function withButton(btnId, statusId, fn) {
-  const btn = document.getElementById(btnId);
-  btn.disabled = true;
+  const btn = btnId ? document.getElementById(btnId) : null;
+  if (btn) btn.disabled = true;
   try {
     await fn();
   } catch (e) {
     setStatus(statusId, e.message, 'err');
   } finally {
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
   }
 }
 
