@@ -424,6 +424,34 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 .cloud-badge.offline{background:var(--glass);border:1px solid var(--glass-border);color:var(--muted)}
 .btn-logout{background:transparent;border:1px solid var(--faint);color:var(--muted);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;cursor:pointer;transition:all .15s;font-family:var(--font-body);display:inline-flex;align-items:center;gap:5px}
 .btn-logout:hover{border-color:var(--red);color:var(--red);background:rgba(232,86,78,0.1)}
+
+/* ── STORY STATS ── */
+.story-stats{font-size:12.5px;color:var(--muted);display:flex;gap:12px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.story-stats span{display:inline-flex;align-items:center;gap:4px}
+
+/* ── STORIES GALLERY ── */
+.stories-gallery{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto}
+.story-card{
+  background:var(--surface2);border:1px solid var(--glass-border);border-radius:var(--radius-sm);
+  padding:10px 12px;cursor:pointer;transition:all .15s;position:relative}
+.story-card:hover{border-color:var(--accent);background:var(--glow-accent)}
+.story-card.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--glow-accent)}
+.story-card-title{font-size:13px;font-weight:700;font-family:var(--font-display);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.story-card-snippet{font-size:11.5px;color:var(--text-soft);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:4px}
+.story-card-meta{font-size:11px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.story-chip{font-size:10px;padding:2px 6px;border-radius:999px;background:rgba(124,92,247,0.1);border:1px solid rgba(124,92,247,0.2);color:#b8a5ff}
+.story-card-del{
+  position:absolute;top:8px;right:8px;background:none;border:none;color:var(--muted);
+  cursor:pointer;font-size:14px;padding:2px 5px;border-radius:6px;transition:color .15s;line-height:1}
+.story-card-del:hover{color:var(--red)}
+
+/* ── DRAFT TOAST ── */
+.draft-toast{
+  position:fixed;bottom:24px;right:24px;z-index:9000;
+  background:var(--surface2);border:1px solid var(--glass-border);border-radius:var(--radius-sm);
+  padding:10px 16px;font-size:13px;color:var(--text);box-shadow:var(--shadow);
+  opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;pointer-events:none}
+.draft-toast.show{opacity:1;transform:translateY(0)}
 </style>
 </head>
 <body>
@@ -437,7 +465,6 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   <div class="header-pills">
     <span class="pill accent" id="pill-text-model">gpt-oss-120b</span>
     <span class="pill" id="pill-provider">Groq</span>
-    <span class="pill">Pollinations.AI</span>
     <span class="cloud-badge offline" id="cloudStatus">● Offline</span>
     <button class="btn-logout" id="logoutBtn" style="display:none" onclick="doLogout()">🚪 Esci</button>
   </div>
@@ -471,18 +498,14 @@ h1,h2,h3,h4{font-family:var(--font-display)}
     <div class="divider"></div>
 
     <div class="sidebar-section">
-      <div class="sidebar-label">📚 Storie salvate</div>
-      <div class="field">
-        <select id="inp-story-select">
-          <option value="">— Seleziona storia —</option>
-        </select>
+      <div class="sidebar-label">📚 Le mie storie</div>
+      <div id="storiesGallery" class="stories-gallery">
+        <div class="empty" style="padding:16px 0;font-size:12px"><p>Nessuna storia salvata.</p></div>
       </div>
-      <div class="btn-group">
-        <button class="btn btn-accent btn-sm" id="btn-cloud-load" style="flex:1">📥 Carica</button>
-        <button class="btn btn-ghost btn-sm" id="btn-list-stories">📋</button>
-        <button class="btn btn-red btn-sm" id="btn-delete-story">🗑️</button>
-      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-list-stories" style="width:100%">🔄 Aggiorna</button>
     </div>
+    <select id="inp-story-select" style="display:none"><option value="">— Seleziona —</option></select>
+    <button id="btn-cloud-load" style="display:none"></button>
   </aside>
 
   <!-- ── TOGGLE RAIL ── -->
@@ -552,7 +575,8 @@ h1,h2,h3,h4{font-family:var(--font-display)}
         <div class="card-icon cyan">📖</div>
         <div>
           <div class="card-title">Capitoli della storia</div>
-          <div class="card-sub">Clicca ✏️ per modificare il testo direttamente. Clicca 📝 per generare il prompt immagine da usare su Gemini.</div>
+          <div class="card-sub">Clicca ✏️ per modificare il testo direttamente. Clicca 📝 per generare il prompt immagine.</div>
+      <div class="story-stats" id="storyStats"></div>
         </div>
       </div>
       <div class="chapter-list" id="chapter-list">
@@ -660,7 +684,8 @@ const S = {
   textModel: 'openai/gpt-oss-120b',
   title: '', audience: '', tone: '', idea: '',
   shortVersion: '',
-  chapters: []
+  chapters: [],
+  slug: null
 };
 
 // ─────────────────────────────────────────────────────────
@@ -683,10 +708,10 @@ async function withButton(btnId, statusId, fn) {
 // ─────────────────────────────────────────────────────────
 function bindInputs() {
   const bindings = [
-    ['inp-title',    v => { S.title    = v; }],
-    ['inp-audience', v => { S.audience = v; }],
-    ['inp-tone',     v => { S.tone     = v; }],
-    ['inp-idea',     v => { S.idea     = v; }],
+    ['inp-title',    v => { S.title    = v; saveDraft(); }],
+    ['inp-audience', v => { S.audience = v; saveDraft(); }],
+    ['inp-tone',     v => { S.tone     = v; saveDraft(); }],
+    ['inp-idea',     v => { S.idea     = v; saveDraft(); }],
   ];
   bindings.forEach(([id, setter]) => {
     const el = document.getElementById(id);
@@ -704,10 +729,76 @@ function bindInputs() {
 function modelShort(modelId) {
   const map = {
     'openai/gpt-oss-120b': 'gpt-oss-120b',
-    'qwen/qwen3.6-27b': 'qwen3.6-27b',
-    'llama-3.3-70b-versatile': 'llama-3.3-70b'
+    'qwen/qwen3.6-27b': 'qwen3.6-27b'
   };
   return map[modelId] || String(modelId).split('/').pop();
+}
+
+// ─────────────────────────────────────────────────────────
+// Utilities — word count + reading time
+// ─────────────────────────────────────────────────────────
+function countWords(text) { return (text || '').trim().split(/\s+/).filter(Boolean).length; }
+function readingTimeMin(words) { return Math.max(1, Math.ceil(words / 180)); }
+
+function updateStoryStats() {
+  const el = document.getElementById('storyStats');
+  if (!el) return;
+  const totalWords = S.chapters.reduce((s, ch) => s + countWords(ch.text || ''), 0);
+  const totalMin = readingTimeMin(totalWords);
+  el.innerHTML = S.chapters.length
+    ? `<span>📖 ${S.chapters.length} capitoli</span><span>·</span><span>${totalWords.toLocaleString('it-IT')} parole</span><span>·</span><span>⏱ ${totalMin} min di lettura</span>`
+    : '';
+}
+
+// ─────────────────────────────────────────────────────────
+// Autosave draft (localStorage)
+// ─────────────────────────────────────────────────────────
+const DRAFT_KEY = 'storybook_draft';
+let draftSaveTimer = null;
+let draftLoaded = false;
+
+function saveDraft() {
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        title: S.title, audience: S.audience, tone: S.tone, idea: S.idea,
+        shortVersion: S.shortVersion,
+        chapters: S.chapters.map(ch => ({ number: ch.number, title: ch.title, text: ch.text, characters: ch.characters }))
+      }));
+    } catch {}
+  }, 500);
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (!d || (!d.title && !d.idea && (!d.chapters || !d.chapters.length))) return false;
+    S.title = d.title || ''; S.audience = d.audience || ''; S.tone = d.tone || '';
+    S.idea = d.idea || ''; S.shortVersion = d.shortVersion || '';
+    S.chapters = d.chapters || [];
+    document.getElementById('inp-title').value = S.title;
+    document.getElementById('inp-audience').value = S.audience;
+    document.getElementById('inp-tone').value = S.tone;
+    document.getElementById('inp-idea').value = S.idea;
+    document.getElementById('short-story-box').textContent = S.shortVersion || 'Nessun testo raffinato ancora.';
+    renderChapters();
+    updateStoryStats();
+    return true;
+  } catch { return false; }
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch {}
+}
+
+function showDraftToast() {
+  const el = document.getElementById('draftToast');
+  if (!el) return;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
 }
 
 // ─────────────────────────────────────────────────────────
@@ -811,7 +902,6 @@ async function doPinLogin() {
     await applyAuthUI();
     await loadCloudSettings();
     await cloudRefreshStoryList();
-    setStatus('status-settings', 'Accesso riuscito ✓', 'ok');
   } catch (e) { setLoginBusy(false); showLoginError(e.message || 'Errore'); }
 }
 
@@ -861,9 +951,9 @@ async function cloudListStories() {
   const sdk = getSupabase();
   if (!sdk) return [];
   const { data, error } = await sdk.schema(SCHEMA).from('stories')
-    .select('slug,title').order('updated_at', { ascending: false });
+    .select('slug,title,chapters').order('updated_at', { ascending: false });
   if (error) return [];
-  return data || [];
+  return (data || []).map(s => ({ ...s, chapter_count: Array.isArray(s.chapters) ? s.chapters.length : 0 }));
 }
 
 async function cloudSaveStory(story) {
@@ -908,7 +998,8 @@ async function cloudDeleteStory(slug) {
 
 async function cloudRefreshStoryList() {
   const stories = await cloudListStories();
-  const selects = ['inp-story-select', 'inp-combine-story-1', 'inp-combine-story-2'];
+  // Combined selects still need to be populated
+  const selects = ['inp-combine-story-1', 'inp-combine-story-2'];
   for (const id of selects) {
     const sel = document.getElementById(id);
     if (!sel) continue;
@@ -920,6 +1011,39 @@ async function cloudRefreshStoryList() {
       sel.appendChild(opt);
     });
   }
+  // Gallery
+  const gallery = document.getElementById('storiesGallery');
+  if (!gallery) return;
+  if (!stories.length) {
+    gallery.innerHTML = '<div class="empty" style="padding:16px 0;font-size:12px"><p>Nessuna storia salvata.</p></div>';
+    return;
+  }
+  gallery.innerHTML = '';
+  stories.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'story-card' + (S.slug === s.slug ? ' active' : '');
+    card.innerHTML = `
+      <div class="story-card-title">${escapeHtml(s.title)}</div>
+      <div class="story-card-meta">
+        <span>📖 ${s.chapter_count || '?'} capitoli</span>
+      </div>
+      <button class="story-card-del" title="Elimina">🗑️</button>
+    `;
+    card.addEventListener('click', e => {
+      if (e.target.closest('.story-card-del')) return;
+      document.getElementById('inp-story-select').value = s.slug;
+      document.getElementById('btn-cloud-load').click();
+    });
+    card.querySelector('.story-card-del').addEventListener('click', e => {
+      e.stopPropagation();
+      if (!confirm(`Eliminare "${s.title}"?`)) return;
+      withButton(null, 'status-story', async () => {
+        await cloudDeleteStory(s.slug);
+        await cloudRefreshStoryList();
+      });
+    });
+    gallery.appendChild(card);
+  });
 }
 
 // ─────────────────────────────────────────────────────────
@@ -1013,6 +1137,8 @@ document.getElementById('btn-cloud-save').addEventListener('click', () => {
     });
     await cloudRefreshStoryList();
     setStatus('status-story', `Storia salvata ✓ (${slug})`, 'ok');
+    clearDraft();
+    S.slug = slug;
   });
 });
 
@@ -1034,7 +1160,10 @@ document.getElementById('btn-cloud-load').addEventListener('click', () => {
     document.getElementById('inp-idea').value = S.idea;
     document.getElementById('short-story-box').textContent = S.shortVersion || 'Nessun testo.';
     renderChapters();
+    clearDraft();
+    S.slug = slug;
     setStatus('status-story', 'Storia caricata ✓', 'ok');
+    updateStoryStats();
   });
 });
 
@@ -1055,21 +1184,6 @@ document.getElementById('inp-story-select').addEventListener('change', () => {
 });
 
 // ─────────────────────────────────────────────────────────
-// Cloud: Elimina storia
-// ─────────────────────────────────────────────────────────
-document.getElementById('btn-delete-story').addEventListener('click', () => {
-  const storyName = document.getElementById('inp-story-select').value;
-  if (!storyName) { setStatus('status-story', 'Seleziona una storia da eliminare.', 'err'); return; }
-  if (!confirm(`Eliminare "${storyName}"?`)) return;
-  withButton('btn-delete-story', 'status-story', async () => {
-    setStatus('status-story', 'Eliminazione…', 'warn');
-    await cloudDeleteStory(storyName);
-    await cloudRefreshStoryList();
-    setStatus('status-story', 'Storia eliminata ✓', 'ok');
-  });
-});
-
-// ─────────────────────────────────────────────────────────
 // Raffina idea
 // ─────────────────────────────────────────────────────────
 document.getElementById('btn-refine').addEventListener('click', () => {
@@ -1082,6 +1196,7 @@ document.getElementById('btn-refine').addEventListener('click', () => {
     S.shortVersion = res;
     document.getElementById('short-story-box').textContent = res;
     setStatus('status-story', 'Idea raffinata ✓', 'ok');
+    saveDraft();
   });
 });
 
@@ -1104,6 +1219,8 @@ document.getElementById('btn-genstory').addEventListener('click', () => {
     S.chapters = [...ch1, ...ch2];
     renderChapters();
     setStatus('status-story', '10 capitoli pronti ✓', 'ok');
+    saveDraft();
+    updateStoryStats();
   });
 });
 
@@ -1125,11 +1242,13 @@ function renderChapters() {
     const card = document.createElement('div');
     card.className = 'ch-card';
     const tags = (ch.characters || []).map(n => `<span class="ch-tag">${escapeHtml(n)}</span>`).join('');
+    const wc = countWords(ch.text || '');
+    const rt = readingTimeMin(wc);
     card.innerHTML = `
 <div class="ch-header">
   <span class="ch-num">Cap. ${ch.number}</span>
   <span class="ch-title-text">${escapeHtml(ch.title)}</span>
-  <div class="ch-tags">${tags}</div>
+  <div class="ch-tags">${tags}<span class="ch-tag" style="background:rgba(34,201,217,0.1);border-color:rgba(34,201,217,0.2);color:#22c9d9">⏱ ${rt}min</span></div>
   <button class="btn btn-ghost btn-sm btn-edit-toggle" data-idx="${idx}">✏️ Modifica</button>
 </div>
 <div class="ch-body">
@@ -1165,6 +1284,8 @@ function renderChapters() {
     if (cancelBtn) { cancelEdit(parseInt(cancelBtn.dataset.idx)); return; }
     if (promptBtn) { genPrompt(parseInt(promptBtn.dataset.idx));  return; }
   });
+
+  updateStoryStats();
 }
 
 // ─────────────────────────────────────────────────────────
@@ -1187,6 +1308,8 @@ function saveEdit(idx) {
   view.textContent = ta.value;
   col.classList.remove('editing');
   setStatus('status-story', 'Capitolo modificato ✓', 'ok');
+  saveDraft();
+  updateStoryStats();
 }
 function cancelEdit(idx) {
   const col = document.getElementById(`ch-col-${idx}`);
@@ -1225,13 +1348,6 @@ NON inserire testi o scritte nell'immagine.`;
 }
 
 // ─────────────────────────────────────────────────────────
-// Fetch story from cloud (replaces fetchStoryFromGitHub)
-// ─────────────────────────────────────────────────────────
-async function fetchStoryFromCloud(slug) {
-  return await cloudLoadStory(slug);
-}
-
-// ─────────────────────────────────────────────────────────
 // Funzionalità 1a — Genera titolo comune tra due storie
 // ─────────────────────────────────────────────────────────
 document.getElementById('btn-gen-combined-title').addEventListener('click', () => {
@@ -1242,8 +1358,8 @@ document.getElementById('btn-gen-combined-title').addEventListener('click', () =
   withButton('btn-gen-combined-title', 'status-combined', async () => {
     setStatus('status-combined', 'Carico storie e genero titolo…', 'warn');
     const [story1, story2] = await Promise.all([
-      fetchStoryFromCloud(s1),
-      fetchStoryFromCloud(s2)
+      cloudLoadStory(s1),
+      cloudLoadStory(s2)
     ]);
     const prompt = `Ho due storie per bambini:
 1) Titolo: "${story1.title}"
@@ -1272,8 +1388,8 @@ document.getElementById('btn-gen-combined-cover').addEventListener('click', () =
   withButton('btn-gen-combined-cover', 'status-combined', async () => {
     setStatus('status-combined', 'Carico storie e genero prompt…', 'warn');
     const [story1, story2] = await Promise.all([
-      fetchStoryFromCloud(s1),
-      fetchStoryFromCloud(s2)
+      cloudLoadStory(s1),
+      cloudLoadStory(s2)
     ]);
     const chars1 = [...new Set(story1.chapters?.flatMap(c => c.characters || []) || [])].join(', ');
     const chars2 = [...new Set(story2.chapters?.flatMap(c => c.characters || []) || [])].join(', ');
@@ -1339,6 +1455,7 @@ window.addEventListener('load', async () => {
   }
 
   bindInputs();
+  const draftRestored = loadDraft();
 
   const settings = localStorage.getItem('storybook_settings');
   const validModels = ['openai/gpt-oss-120b', 'qwen/qwen3.6-27b'];
@@ -1354,6 +1471,7 @@ window.addEventListener('load', async () => {
       }
     } catch {}
   }
+  if (draftRestored) { showDraftToast(); }
   document.getElementById('pill-text-model').textContent = modelShort(S.textModel);
 
   const session = await getSession();
@@ -1366,5 +1484,6 @@ window.addEventListener('load', async () => {
   }
 });
 </script>
+<div class="draft-toast" id="draftToast">📋 Bozza ripristinata</div>
 </body>
 </html>
