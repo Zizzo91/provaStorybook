@@ -463,6 +463,11 @@ h1,h2,h3,h4{font-family:var(--font-display)}
   cursor:pointer;font-size:14px;padding:2px 5px;border-radius:6px;transition:color .15s;line-height:1}
 .story-card-del:hover{color:var(--red)}
 
+/* ── PROVIDER STATUS ── */
+#model-status.err{color:var(--red)}
+#inp-model-manual{font-size:12px;padding:7px 10px}
+#model-status:empty{display:none}
+
 /* ── DRAFT TOAST ── */
 .draft-toast{
   position:fixed;bottom:24px;right:24px;z-index:9000;
@@ -495,11 +500,21 @@ h1,h2,h3,h4{font-family:var(--font-display)}
     <div class="sidebar-section">
       <div class="sidebar-label">⚙️ Modello AI</div>
       <div class="field">
-        <label>Modello testo</label>
-        <select id="inp-textmodel">
-          <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
-          <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b</option>
+        <label>Motore (provider)</label>
+        <select id="inp-provider">
+          <option value="groq">Groq (cloud)</option>
+          <option value="ollama">Ollama (locale)</option>
+          <option value="unsloth">Unsloth (locale)</option>
         </select>
+      </div>
+      <div class="field">
+        <label>Modello testo</label>
+        <select id="inp-textmodel"></select>
+        <div id="model-status" style="font-size:11.5px;color:var(--muted);line-height:1.4"></div>
+      </div>
+      <div class="field">
+        <label>Modello personalizzato</label>
+        <input type="text" id="inp-model-manual" placeholder="es. qwen3.5:9b o nome servito da Unsloth">
       </div>
     </div>
 
@@ -697,12 +712,67 @@ h1,h2,h3,h4{font-family:var(--font-display)}
 // ─────────────────────────────────────────────────────────
 const S = {
   apiKey: '',
+  provider: 'groq',
   textModel: 'openai/gpt-oss-120b',
   title: '', audience: '', tone: '', idea: '',
   shortVersion: '',
   chapters: [],
   slug: null
 };
+
+// ─────────────────────────────────────────────────────────
+// Provider LLM — Groq (cloud) + motori locali OpenAI-compatible
+// ─────────────────────────────────────────────────────────
+const PROVIDERS = {
+  groq: {
+    label: 'Groq (cloud)',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    chatUrl: 'https://api.groq.com/openai/v1/chat/completions',
+    needsKey: true,
+    staticModels: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'],
+    maxTokens: 3500
+  },
+  ollama: {
+    label: 'Ollama (locale)',
+    baseUrl: 'http://localhost:11434/v1',
+    chatUrl: 'http://localhost:11434/v1/chat/completions',
+    needsKey: false,
+    listUrl: 'http://localhost:11434/api/tags',
+    ollamaApi: true,
+    maxTokens: 3500
+  },
+  unsloth: {
+    label: 'Unsloth (locale)',
+    baseUrl: 'http://localhost:8000/v1',
+    chatUrl: 'http://localhost:8000/v1/chat/completions',
+    needsKey: false,
+    listUrl: 'http://localhost:8000/v1/models',
+    maxTokens: 3500
+  }
+};
+
+const providerDef = () => PROVIDERS[S.provider] || PROVIDERS.groq;
+
+// Ollama /api/tags -> nomi modelli testuali (esclude embedding)
+async function fetchModelCatalog(providerId) {
+  const def = PROVIDERS[providerId];
+  if (!def) return [];
+  if (def.staticModels) return def.staticModels.slice();
+  if (!def.listUrl) return [];
+  try {
+    const res = await fetch(def.listUrl);
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (def.ollamaApi) {
+      return (data.models || [])
+        .filter(m => !/embed|bge-|minilm|clip/i.test(m.name || ''))
+        .map(m => m.name);
+    }
+    return (data.data || []).map(m => m.id).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
 
 // ─────────────────────────────────────────────────────────
 // OTTIMIZZAZIONE 1 — withButton
@@ -735,16 +805,70 @@ function bindInputs() {
     el.addEventListener('change', () => setter(el.value.trim()));
   });
   const tm = document.getElementById('inp-textmodel');
-  tm.addEventListener('change', () => {
-    S.textModel = tm.value;
-    localStorage.setItem('storybook_settings', JSON.stringify({ textModel: tm.value }));
-    document.getElementById('pill-text-model').textContent = modelShort(tm.value);
+  tm.addEventListener('change', () => applyModel(tm.value));
+
+  const pv = document.getElementById('inp-provider');
+  pv.addEventListener('change', async () => {
+    S.provider = pv.value;
+    const models = await refreshModelSelect();
+    if (models.length) applyModel(models[0]);
+    else applyModel('');
   });
+
+  const mn = document.getElementById('inp-model-manual');
+  mn.addEventListener('change', () => {
+    const v = mn.value.trim();
+    if (v) applyModel(v);
+  });
+}
+
+function saveSettings() {
+  localStorage.setItem('storybook_settings', JSON.stringify({
+    provider: S.provider, textModel: S.textModel
+  }));
+}
+
+function applyModel(model) {
+  S.textModel = model || '';
+  const tm = document.getElementById('inp-textmodel');
+  if (tm && model && [...tm.options].some(o => o.value === model)) tm.value = model;
+  document.getElementById('pill-text-model').textContent = modelShort(model);
+  document.getElementById('pill-provider').textContent = providerDef().label.split(' ')[0];
+  saveSettings();
+}
+
+async function refreshModelSelect() {
+  const tm = document.getElementById('inp-textmodel');
+  const st = document.getElementById('model-status');
+  const def = providerDef();
+  if (!tm) return [];
+  tm.innerHTML = '<option value="">— caricamento… —</option>';
+  const models = await fetchModelCatalog(S.provider);
+  if (!models.length) {
+    tm.innerHTML = '<option value="">— nessun modello —</option>';
+    if (st) {
+      st.className = 'err';
+      st.textContent = S.provider === 'ollama'
+        ? 'Ollama non raggiungibile: avvialo con `ollama serve`.'
+        : (S.provider === 'unsloth'
+          ? 'Server non raggiungibile: avvia Unsloth (di solito su porta 8000).'
+          : 'Errore nel caricamento dei modelli.');
+    }
+    return [];
+  }
+  tm.innerHTML = models.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+  if (S.textModel && models.includes(S.textModel)) tm.value = S.textModel;
+  if (st) {
+    st.className = '';
+    st.textContent = models.length + (models.length === 1 ? ' modello disponibile' : ' modelli disponibili');
+  }
+  return models;
 }
 
 function modelShort(modelId) {
   const map = {
     'openai/gpt-oss-120b': 'gpt-oss-120b',
+    'openai/gpt-oss-20b': 'gpt-oss-20b',
     'qwen/qwen3.8-27b': 'qwen3.8-27b'
   };
   return map[modelId] || String(modelId).split('/').pop();
@@ -1097,30 +1221,64 @@ function extractJson(raw) {
 // ─────────────────────────────────────────────────────────
 // API Groq
 // ─────────────────────────────────────────────────────────
-async function callGroqText({ prompt, temperature = 0.7, maxTokens = 3500 }) {
-  if (!S.apiKey) throw new Error('⚠️ Groq API key non caricata.');
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${S.apiKey}` },
-    body: JSON.stringify({
-      model: S.textModel,
-      messages: [{ role: 'user', content: prompt }],
-      temperature,
-      max_tokens: maxTokens
-    })
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(groqError(res.status, data));
-  return data.choices[0].message.content.trim();
+async function callLLM({ prompt, temperature = 0.7, maxTokens }) {
+  const def = providerDef();
+  if (!S.textModel) throw new Error('⚠️ Nessun modello selezionato. Scegline uno dal menu a sinistra.');
+  if (def.needsKey && !S.apiKey) throw new Error('⚠️ Chiave API Groq non caricata: effettua il login.');
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (def.needsKey) headers['Authorization'] = `Bearer ${S.apiKey}`;
+
+  const body = { model: S.textModel, messages: [{ role: 'user', content: prompt }], temperature };
+  // Ollama OpenAI-compat accetta max_tokens, ma lo omettiamo per non vincolare il contesto
+  if (!def.ollamaApi) body.max_tokens = maxTokens || def.maxTokens;
+  body.stream = false;
+
+  let res, data;
+  try {
+    res = await fetch(def.chatUrl, { method: 'POST', headers, body: JSON.stringify(body) });
+  } catch {
+    const hint = S.provider === 'ollama'
+      ? 'Ollama non raggiungibile. Avvialo con `ollama serve`.'
+      : (S.provider === 'unsloth'
+        ? 'Server Unsloth non raggiungibile. Avvialo e ricarica la pagina.'
+        : 'Errore di rete verso Groq.');
+    throw new Error('⚠️ ' + hint);
+  }
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error('⚠️ Risposta non valida dal server ' + def.label.split(' ')[0] + '.');
+  }
+  if (!res.ok) throw new Error(llmError(res.status, data));
+
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content !== 'string' || !content.trim()) {
+    const fin = data?.choices?.[0]?.finish_reason;
+    throw new Error(fin === 'length'
+      ? '⚠️ Risposta troncata: il modello ha esaurito i token disponibili. Prova un modello più piccolo o un testo più corto.'
+      : '⚠️ Il modello ha restituito una risposta vuota. Riprova o cambia modello.');
+  }
+  return content.trim();
 }
 
-function groqError(status, data) {
+function llmError(status, data) {
+  const local = S.provider !== 'groq';
   const msg = (data?.error?.message || data?.error?.code || '').toString().toLowerCase();
-  if (/invalid.*api key|unauthenticated|incorrect api key/i.test(msg)) return '⚠️ Chiave API Groq non valida: controlla la chiave nel pannello Configurazione.';
-  if (/does not exist|model.*not.*access|model.*not found/i.test(msg)) return '⚠️ Modello non disponibile su Groq. Prova a cambiarlo dal menu "Modello testo" (es. qwen/qwen3.8-27b).';
-  if (status === 429 || /rate.?limit|quota|sper|token.*limit|daily/i.test(msg)) return `⚠️ Quota Groq esaurita (i limiti si azzerano ogni giorno). Cambia modello dal menu o riprova domani.`;
-  return data?.error?.message || 'Errore Groq';
+  if (/invalid.*api key|unauthenticated|incorrect api key/i.test(msg)) return '⚠️ Chiave API Groq non valida: effettua il login di nuovo.';
+  if (/does not exist|model.*not.*access|model.*not found|unknown model/i.test(msg))
+    return local
+      ? `⚠️ Modello "${S.textModel}" non trovato sul server locale. Verifica il nome o usa "Modello personalizzato".`
+      : `⚠️ Modello non disponibile su Groq. Prova openai/gpt-oss-20b dal menu "Motore".`;
+  if (/otpm|output tokens per minute/i.test(msg))
+    return '⚠️ Limite output al minuto su questo modello (serve max_tokens più basso). Usa gpt-oss-20b o un modello locale.';
+  if (status === 429 || /rate.?limit|quota|sper|token.*limit|daily/i.test(msg))
+    return local ? '⚠️ Server locale occupato o oltre il limite. Riprova.' : '⚠️ Quota Groq esaurita (si azzera ogni giorno). Cambia modello o usa un modello locale.';
+  return (data?.error?.message) || 'Errore LLM';
 }
+
+// Wrapper: mantiene i call site esistenti invariati
+function callGroqText(args) { return callLLM(args); }
 
 // ─────────────────────────────────────────────────────────
 // OTTIMIZZAZIONE 3 — generateChapterBatch
@@ -1481,22 +1639,25 @@ window.addEventListener('load', async () => {
   const draftRestored = loadDraft();
 
   const settings = localStorage.getItem('storybook_settings');
-  const validModels = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
+  let savedModel = '';
   if (settings) {
     try {
       const s = JSON.parse(settings);
+      if (s.provider && PROVIDERS[s.provider]) {
+        S.provider = s.provider;
+        document.getElementById('inp-provider').value = s.provider;
+      }
       if (s.textModel) {
         if (s.textModel === 'qwen/qwen3.6-27b') s.textModel = 'qwen/qwen3.8-27b';
-        const tm = document.getElementById('inp-textmodel');
-        const model = validModels.includes(s.textModel) ? s.textModel : 'openai/gpt-oss-120b';
-        tm.value = model;
-        S.textModel = model;
-        localStorage.setItem('storybook_settings', JSON.stringify({ textModel: model }));
+        savedModel = s.textModel;
       }
     } catch {}
   }
+  const cat = await refreshModelSelect();
+  if (savedModel && (cat.includes(savedModel) || !cat.length)) S.textModel = savedModel;
+  else if (cat.length) S.textModel = cat.includes(S.textModel) ? S.textModel : cat[0];
+  if (S.textModel) applyModel(S.textModel);
   if (draftRestored) { showDraftToast(); }
-  document.getElementById('pill-text-model').textContent = modelShort(S.textModel);
 
   const session = await getSession();
   if (session) {
