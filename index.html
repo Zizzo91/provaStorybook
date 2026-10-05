@@ -735,10 +735,12 @@ const PROVIDERS = {
   ollama: {
     label: 'Ollama (locale)',
     baseUrl: 'http://localhost:11434/v1',
-    chatUrl: 'http://localhost:11434/v1/chat/completions',
+    // Endpoint NATIVO (non OpenAI-compat): serve think:false per i modelli "reasoning"
+    chatUrl: 'http://localhost:11434/api/chat',
     needsKey: false,
     listUrl: 'http://localhost:11434/api/tags',
-    ollamaApi: true,
+    nativeApi: true,
+    numPredict: 8000,
     maxTokens: 3500
   },
   unsloth: {
@@ -763,11 +765,13 @@ async function fetchModelCatalog(providerId) {
     const res = await fetch(def.listUrl);
     if (!res.ok) return [];
     const data = await res.json();
-    if (def.ollamaApi) {
+    if (def.nativeApi) {
+      // Ollama /api/tags -> {models:[{name}]}
       return (data.models || [])
         .filter(m => !/embed|bge-|minilm|clip/i.test(m.name || ''))
         .map(m => m.name);
     }
+    // OpenAI-compat -> {data:[{id}]}
     return (data.data || []).map(m => m.id).filter(Boolean);
   } catch {
     return [];
@@ -1229,10 +1233,19 @@ async function callLLM({ prompt, temperature = 0.7, maxTokens }) {
   const headers = { 'Content-Type': 'application/json' };
   if (def.needsKey) headers['Authorization'] = `Bearer ${S.apiKey}`;
 
-  const body = { model: S.textModel, messages: [{ role: 'user', content: prompt }], temperature };
-  // Ollama OpenAI-compat accetta max_tokens, ma lo omettiamo per non vincolare il contesto
-  if (!def.ollamaApi) body.max_tokens = maxTokens || def.maxTokens;
-  body.stream = false;
+  const body = { model: S.textModel, messages: [{ role: 'user', content: prompt }], stream: false };
+
+  if (def.nativeApi) {
+    // Ollama nativo: think:false spegne il ragionamento dei modelli "thinking"
+    // (spark, qwen3.5, gpt-oss). Senza, consumano il budget in `thinking` e
+    // `content` arriva vuoto. num_predict ampio evita troncamenti sui 10 capitoli.
+    // NB: il flag equivalente sull'endpoint /v1 (chat_template_kwargs) viene ignorato.
+    body.think = false;
+    body.options = { temperature, num_predict: maxTokens || def.numPredict };
+  } else {
+    body.temperature = temperature;
+    body.max_tokens = maxTokens || def.maxTokens;
+  }
 
   let res, data;
   try {
@@ -1252,9 +1265,12 @@ async function callLLM({ prompt, temperature = 0.7, maxTokens }) {
   }
   if (!res.ok) throw new Error(llmError(res.status, data));
 
-  const content = data?.choices?.[0]?.message?.content;
+  const msg = def.nativeApi ? data?.message : data?.choices?.[0]?.message;
+  const fin = def.nativeApi
+    ? (data?.done_reason === 'length' ? 'length' : data?.done_reason)
+    : data?.choices?.[0]?.finish_reason;
+  const content = msg?.content;
   if (typeof content !== 'string' || !content.trim()) {
-    const fin = data?.choices?.[0]?.finish_reason;
     throw new Error(fin === 'length'
       ? '⚠️ Risposta troncata: il modello ha esaurito i token disponibili. Prova un modello più piccolo o un testo più corto.'
       : '⚠️ Il modello ha restituito una risposta vuota. Riprova o cambia modello.');
@@ -1283,6 +1299,17 @@ function callGroqText(args) { return callLLM(args); }
 // ─────────────────────────────────────────────────────────
 // OTTIMIZZAZIONE 3 — generateChapterBatch
 // ─────────────────────────────────────────────────────────
+// Istruzioni di formato riusate da entrambi i batch: i modelli locali piccoli
+// (2-4B) hanno bisogno di vincoli espliciti, altrimenti restituiscono JSON
+// troncato, titoli generici ("Capitolo 1") o virgolette non escapiate.
+const CHAPTER_RULES = `REGOLE:
+- 5 capitoli, ognuno con title e text in italiano semplice, 100-150 parole.
+- "title": un titolo breve e creativa (2-5 parole). NON usare "Capitolo 1", "Capitolo 2" ecc.
+- "text": prosa continua. NON usare virgolette, doppi apici o apici singoli dentro il testo.
+- "characters": array con i nomi dei personaggi che compaiono in quel capitolo.
+- "number": intero progressivo (1-5 oppure 6-10).
+Formato esatto: [{"number":1,"title":"Titolo","text":"Testo del capitolo.","characters":["Nome"]}]`;
+
 async function generateChapterBatch(prompt, retries = 1) {
   const raw = await callGroqText({ prompt });
   try {
@@ -1390,11 +1417,17 @@ document.getElementById('btn-genstory').addEventListener('click', () => {
     if (!base) throw new Error("Scrivi un'idea o raffina prima la storia.");
 
     setStatus('status-story', 'Generazione capitoli 1–5…', 'warn');
-    const prompt1 = `Genera i primi 5 capitoli di una storia basata su: ${base}. Restituisci SOLO un array JSON: [{"number":1,"title":"...","text":"...","characters":["..."]}]`;
+    const prompt1 = `Genera i primi 5 capitoli di una storia illustrata per bambini su: ${base}
+${CHAPTER_RULES}
+Restituisci SOLO l'array JSON, senza testo prima o dopo.`;
     const { chapters: ch1, raw: raw1 } = await generateChapterBatch(prompt1);
 
     setStatus('status-story', 'Generazione capitoli 6–10…', 'warn');
-    const prompt2 = `Continua la storia dopo questi capitoli: ${raw1}. Genera i capitoli 6-10 (totale 5 capitoli). Stesso formato JSON array.`;
+    const prompt2 = `Continua la storia dopo questi capitoli: ${raw1}
+
+Genera i capitoli 6, 7, 8, 9, 10 (in totale 5 capitoli) con lo stesso identico formato JSON.
+${CHAPTER_RULES}
+Restituisci SOLO l'array JSON, senza testo prima o dopo.`;
     const { chapters: ch2 } = await generateChapterBatch(prompt2);
 
     S.chapters = [...ch1, ...ch2];
